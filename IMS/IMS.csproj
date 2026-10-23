@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Global\js\" />
+    <Folder Include="Views\Home\css\" />
+    <Folder Include="Views\Home\js\" />
+    <Folder Include="Views\Dashboard\" />
+  </ItemGroup>
+
+</Project>
