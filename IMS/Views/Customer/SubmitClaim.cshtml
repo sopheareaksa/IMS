@@ -1,0 +1,95 @@
+@model IMS.Models.Claim
+@{
+    ViewData["Title"] = "File an Incident Claim";
+}
+
+<div class="row justify-content-center py-3">
+    <div class="col-12 col-lg-8 col-xl-7">
+        <div class="card border-0 shadow-sm" style="border: 1px solid #e5e7eb !important; border-radius: 16px; overflow: hidden;">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #881337, #4c0519); padding: 28px 28px; color: #fff;">
+                <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; background: rgba(225,29,72,0.25); border: 1px solid rgba(244,63,94,0.3); border-radius: 99px; font-size: 11.5px; font-weight: 700; color: #fecdd3; margin-bottom: 10px;">
+                    <i class="bi bi-shield-exclamation"></i> Emergency & Claims Desk
+                </div>
+                <h1 style="font-size: 22px; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.02em;">File an Incident Claim</h1>
+                <p style="font-size: 12.5px; color: #fecdd3; margin: 0; line-height: 1.5;">
+                    Submit verifiable accident or loss details for expedited review and adjudication by claims officers.
+                </p>
+            </div>
+
+            <!-- Body -->
+            <div class="p-4 p-md-5 bg-white">
+                <form asp-action="SubmitClaim" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="alert-banner danger mb-4" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Covered Insurance Policy <span class="text-danger">*</span></label>
+                        <select asp-for="inPoId" asp-items="ViewBag.Policies" class="form-select" required></select>
+                        <span asp-validation-for="inPoId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="incidentDate" class="form-label">Date of Incident <span class="text-danger">*</span></label>
+                            <input asp-for="incidentDate" type="date" class="form-control" required />
+                            <span asp-validation-for="incidentDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="incidentType" class="form-label">Incident Category <span class="text-danger">*</span></label>
+                            <select asp-for="incidentType" class="form-select" required>
+                                <option value="Vehicle Accident / Collision">Vehicle Accident / Collision</option>
+                                <option value="Hospitalization / Emergency Care">Hospitalization / Emergency Care</option>
+                                <option value="Property Fire Damage">Property Fire Damage</option>
+                                <option value="Theft or Loss">Theft or Loss</option>
+                                <option value="Travel Delay / Baggage Loss">Travel Delay / Baggage Loss</option>
+                                <option value="Other Incident">Other Incident</option>
+                            </select>
+                            <span asp-validation-for="incidentType" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="incidentLocation" class="form-label">Incident Location & Facility <span class="text-danger">*</span></label>
+                        <input asp-for="incidentLocation" class="form-control" placeholder="City, district, street, or medical center" required />
+                        <span asp-validation-for="incidentLocation" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="claimAmount" class="form-label">Estimated Claim Payout ($) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted">$</span>
+                            <input asp-for="claimAmount" type="number" step="0.01" min="1" class="form-control font-monospace fw-bold" placeholder="e.g. 1500.00" required />
+                        </div>
+                        <span asp-validation-for="claimAmount" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Notice banner -->
+                    <div class="action-banner amber mb-4">
+                        <div class="action-banner-icon">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                        <div>
+                            <div class="action-banner-title">Real-Time Officer Dispatch</div>
+                            <div class="action-banner-desc">Filing this claim will immediately alert assigned claims adjusters and underwriters for your policy.</div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="d-flex align-items-center justify-content-between pt-3 border-top">
+                        <a asp-action="MyPolicies" class="btn btn-outline btn-md">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-danger btn-md">
+                            <i class="bi bi-send-fill"></i> Submit Incident Claim
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,0 +1,368 @@
+@model IEnumerable<IMS.Models.Company>
+@{
+    ViewData["Title"] = "Carrier Companies & Partners Directory - InsureHub";
+    int approved = Model.Count(c => c.approvalStatus == "Approved");
+    int pending = Model.Count(c => c.approvalStatus == "Pending");
+    int suspended = Model.Count(c => c.approvalStatus == "Suspended");
+}
+
+<!-- ════ PAGE HEADER ════ -->
+<div class="page-header" style="align-items: center; margin-bottom: 24px;">
+    <div>
+        <div class="page-header-title" style="font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.025em; margin-bottom: 4px;">
+            Carrier Companies & Insurance Partners
+        </div>
+        <div class="page-header-sub" style="color: #64748b; font-size: 13.5px;">
+            Supervise accredited insurance enterprise registrations, verify credentials, and manage platform commission agreements.
+        </div>
+    </div>
+    
+    <!-- Top Action / Quick Filters Outside Table -->
+    <div class="page-header-actions">
+        <a asp-controller="Admin" asp-action="Companies" class="btn btn-outline btn-sm">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+        </a>
+    </div>
+</div>
+
+<!-- ════ STATS ROW (Clean, Simple Colors) ════ -->
+<div class="stat-row" style="grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+    <div class="stat-card" style="border-radius: 16px; border: 1px solid #e2e8f0; padding: 18px 20px;">
+        <div class="stat-icon" style="background: #ecfdf5; color: #059669; border-radius: 12px; width: 44px; height: 44px; font-size: 20px;">
+            <i class="bi bi-patch-check"></i>
+        </div>
+        <div class="stat-body">
+            <div class="stat-label" style="font-size: 11.5px; font-weight: 700; color: #64748b;">Approved Carriers</div>
+            <div class="stat-value" style="font-size: 28px; font-weight: 800; color: #0f172a;">@approved</div>
+            <div class="stat-sub" style="color: #059669; font-size: 11.5px; font-weight: 600;">Active in marketplace</div>
+        </div>
+    </div>
+
+    <div class="stat-card" style="border-radius: 16px; border: 1px solid #e2e8f0; padding: 18px 20px;">
+        <div class="stat-icon" style="background: #fffbeb; color: #d97706; border-radius: 12px; width: 44px; height: 44px; font-size: 20px;">
+            <i class="bi bi-clock-history"></i>
+        </div>
+        <div class="stat-body">
+            <div class="stat-label" style="font-size: 11.5px; font-weight: 700; color: #64748b;">Pending Onboarding</div>
+            <div class="stat-value" style="font-size: 28px; font-weight: 800; color: #0f172a;">@pending</div>
+            <div class="stat-sub" style="color: #d97706; font-size: 11.5px; font-weight: 600;">Awaiting review</div>
+        </div>
+    </div>
+
+    <div class="stat-card" style="border-radius: 16px; border: 1px solid #e2e8f0; padding: 18px 20px;">
+        <div class="stat-icon" style="background: #fff1f2; color: #e11d48; border-radius: 12px; width: 44px; height: 44px; font-size: 20px;">
+            <i class="bi bi-slash-circle"></i>
+        </div>
+        <div class="stat-body">
+            <div class="stat-label" style="font-size: 11.5px; font-weight: 700; color: #64748b;">Suspended / Inactive</div>
+            <div class="stat-value" style="font-size: 28px; font-weight: 800; color: #0f172a;">@suspended</div>
+            <div class="stat-sub" style="color: #e11d48; font-size: 11.5px; font-weight: 600;">Temporarily locked</div>
+        </div>
+    </div>
+</div>
+
+<!-- ════ MAIN TABLE PANEL (All Action Buttons Outside Table) ════ -->
+<div class="panel" style="border-radius: 18px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+    <div class="panel-header" style="background: #ffffff; border-bottom: 1px solid #f1f5f9; padding: 16px 20px;">
+        <div class="panel-title" style="font-size: 14px; font-weight: 700; color: #0f172a;">
+            <i class="bi bi-buildings me-2 text-primary"></i>Carrier Accounts Directory
+        </div>
+        <span class="badge badge-gray" style="font-weight: 700;">@Model.Count() records</span>
+    </div>
+
+    <!-- ══ ACTIONS TOOLBAR OUTSIDE TABLE ══ -->
+    <div class="table-actions-toolbar" id="comp-toolbar" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 12px 20px;">
+        <div class="toolbar-label">
+            <span class="badge bg-secondary-subtle text-secondary border py-1.5 px-2" id="comp-selected-badge" style="font-size: 11.5px;">
+                <i class="bi bi-info-circle me-1"></i>No company selected
+            </span>
+            <span class="text-muted small" id="comp-selected-name" style="font-size: 12.5px;">Select a carrier company row to execute actions</span>
+        </div>
+        <div class="toolbar-btns">
+            <button type="button" id="comp-btn-approve" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#approveCompanyModal" disabled>
+                <i class="bi bi-check-lg me-1"></i>Approve Partner
+            </button>
+            <form id="comp-form-reject" asp-action="RejectCompany" method="post" class="d-inline m-0" onsubmit="return confirm('Reject this company registration?');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="comp-reject-id" />
+                <button type="submit" id="comp-btn-reject" class="btn btn-sm btn-outline text-danger" disabled>
+                    <i class="bi bi-x-lg me-1"></i>Reject
+                </button>
+            </form>
+            <form id="comp-form-suspend" asp-action="SuspendCompany" method="post" class="d-inline m-0">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="comp-suspend-id" />
+                <button type="submit" id="comp-btn-suspend" class="btn btn-sm btn-outline" disabled>
+                    <i class="bi bi-pause me-1" id="comp-suspend-icon"></i>
+                    <span id="comp-suspend-text">Suspend</span>
+                </button>
+            </form>
+            <button type="button" id="comp-btn-commission" class="btn btn-sm btn-outline" data-bs-toggle="modal" data-bs-target="#commissionCompanyModal" disabled>
+                <i class="bi bi-percent me-1 text-primary"></i>Edit Commission
+            </button>
+            <span id="comp-host-badge" class="badge badge-primary d-none">
+                <i class="bi bi-shield-check me-1"></i>Platform Host (Read-Only)
+            </span>
+        </div>
+    </div>
+
+    <div class="table-responsive" style="border: none; border-radius: 0; box-shadow: none;">
+        <table class="table align-middle selectable-table mb-0" id="companies-table">
+            <thead>
+                <tr>
+                    <th style="width: 44px;" class="text-center">
+                        <i class="bi bi-check2-circle text-muted"></i>
+                    </th>
+                    <th>Company Name</th>
+                    <th>Registration Code</th>
+                    <th>Lead Representative</th>
+                    <th>Contact Details</th>
+                    <th>Commission</th>
+                    <th>Active Plans</th>
+                    <th>Approval Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var c in Model)
+                    {
+                        <tr class="selectable-row" data-id="@c.companyId" data-name="@c.name" data-status="@c.approvalStatus" data-commission="@c.commissionRate" data-ishost="@(c.isHostCompany ? "true" : "false")">
+                            <td class="text-center" onclick="event.stopPropagation();">
+                                <input type="radio" name="selectedCompany" class="form-check-input comp-radio"
+                                       data-id="@c.companyId" data-name="@c.name" data-status="@c.approvalStatus" data-commission="@c.commissionRate" data-ishost="@(c.isHostCompany ? "true" : "false")" />
+                            </td>
+                            <td>
+                                <div class="cell-primary d-flex align-items-center gap-2">
+                                    <div style="width: 34px; height: 34px; border-radius: 10px; background: @(c.isHostCompany ? "linear-gradient(135deg, #2563eb, #3b82f6)" : "#f1f5f9"); color: @(c.isHostCompany ? "#fff" : "#475569"); display: flex; align-items: center; justify-content: center; font-size: 13.5px; font-weight: 700;">
+                                        @(c.name.Length > 0 ? c.name.Substring(0,1).ToUpper() : "C")
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark">
+                                            @c.name
+                                            @if (c.isHostCompany)
+                                            {
+                                                <span class="badge badge-primary ms-1" style="font-size: 10px;"><i class="bi bi-shield-check"></i> Host</span>
+                                            }
+                                        </div>
+                                        <div class="cell-sub" style="font-size: 11.5px; color: #94a3b8;">@(string.IsNullOrWhiteSpace(c.address) ? "No address specified" : c.address)</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <code style="background: #f1f5f9; padding: 3px 8px; border-radius: 6px; font-weight: 700; color: #0f172a;">@c.regNo</code>
+                            </td>
+                            <td>
+                                @if (c.Agents.Any())
+                                {
+                                    <div class="fw-semibold text-dark">@c.Agents.First().fullName</div>
+                                    <div class="cell-sub" style="font-size: 11.5px; color: #64748b;"><i class="bi bi-diagram-3 me-1"></i>@(c.Agents.First().branch ?? "Headquarters")</div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted fst-italic small">No representative assigned</span>
+                                }
+                            </td>
+                            <td>
+                                <div><i class="bi bi-envelope me-1 text-muted"></i>@c.email</div>
+                                <div class="cell-sub" style="font-size: 11.5px; color: #94a3b8;"><i class="bi bi-telephone me-1"></i>@(c.phone ?? "N/A")</div>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-dark" style="font-size: 13.5px;">@c.commissionRate.ToString("F1")%</span>
+                            </td>
+                            <td>
+                                <span class="badge badge-gray" style="font-size: 11px;">@c.Products.Count plans</span>
+                            </td>
+                            <td>
+                                @if (c.approvalStatus == "Approved")
+                                {
+                                    <span class="badge badge-success"><i class="bi bi-check-circle me-1"></i>Approved</span>
+                                }
+                                else if (c.approvalStatus == "Pending")
+                                {
+                                    <span class="badge badge-warning"><i class="bi bi-clock-history me-1"></i>Pending</span>
+                                }
+                                else if (c.approvalStatus == "Suspended")
+                                {
+                                    <span class="badge badge-danger"><i class="bi bi-pause-circle me-1"></i>Suspended</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-danger">@c.approvalStatus</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state" style="padding: 48px; text-align: center;">
+                                <div class="empty-state-icon" style="width: 52px; height: 52px; border-radius: 50%; background: #f1f5f9; color: #94a3b8; display: inline-flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 12px;">
+                                    <i class="bi bi-buildings"></i>
+                                </div>
+                                <div class="empty-state-title" style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">No partner companies found</div>
+                                <div class="empty-state-desc" style="font-size: 12.5px; color: #64748b;">There are currently no insurance carrier applications registered.</div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Approve Partner (Outside Table) -->
+<div class="modal fade text-start" id="approveCompanyModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <form asp-action="ApproveCompany" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="modal-approve-id" />
+                <div class="modal-header bg-success text-white py-3 px-4">
+                    <h5 class="modal-title fw-bold" style="font-size: 15px;"><i class="bi bi-check-circle me-2"></i>Approve Company: <span id="modal-approve-title"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-secondary small mb-3">Approving this enterprise will activate representative agent accounts and enable product listings on the marketplace.</p>
+                    <div class="mb-3">
+                        <label class="form-label" style="font-weight: 600; font-size: 12.5px;">Platform Commission Rate (%)</label>
+                        <div class="input-group">
+                            <input type="number" step="0.5" min="0" max="100" name="commissionRate" id="modal-approve-commission" class="form-control" required />
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <small class="text-muted" style="font-size: 11px;">Host platform fee percentage charged on policies sold by this partner.</small>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0 py-3 px-4">
+                    <button type="button" class="btn btn-outline btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success btn-sm">Confirm Approval</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edit Commission (Outside Table) -->
+<div class="modal fade text-start" id="commissionCompanyModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <form asp-action="UpdateCommission" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="modal-commission-id" />
+                <div class="modal-header py-3 px-4" style="border-bottom: 1px solid #f1f5f9;">
+                    <h5 class="modal-title fw-bold text-dark" style="font-size: 15px;"><i class="bi bi-percent me-2 text-primary"></i>Update Commission: <span id="modal-commission-title"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label" style="font-weight: 600; font-size: 12.5px;">New Commission Rate (%)</label>
+                        <div class="input-group">
+                            <input type="number" step="0.5" min="0" max="100" name="commissionRate" id="modal-commission-rate" class="form-control" required />
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0 py-3 px-4">
+                    <button type="button" class="btn btn-outline btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const table = document.getElementById('companies-table');
+        if (!table) return;
+
+        const btnApprove = document.getElementById('comp-btn-approve');
+        const btnReject = document.getElementById('comp-btn-reject');
+        const rejectId = document.getElementById('comp-reject-id');
+        const btnSuspend = document.getElementById('comp-btn-suspend');
+        const suspendId = document.getElementById('comp-suspend-id');
+        const suspendText = document.getElementById('comp-suspend-text');
+        const suspendIcon = document.getElementById('comp-suspend-icon');
+        const btnCommission = document.getElementById('comp-btn-commission');
+        const hostBadge = document.getElementById('comp-host-badge');
+        const badge = document.getElementById('comp-selected-badge');
+        const nameLabel = document.getElementById('comp-selected-name');
+
+        const modalApproveId = document.getElementById('modal-approve-id');
+        const modalApproveTitle = document.getElementById('modal-approve-title');
+        const modalApproveCommission = document.getElementById('modal-approve-commission');
+        const modalCommissionId = document.getElementById('modal-commission-id');
+        const modalCommissionTitle = document.getElementById('modal-commission-title');
+        const modalCommissionRate = document.getElementById('modal-commission-rate');
+
+        function selectCompany(row) {
+            table.querySelectorAll('tbody tr').forEach(r => r.classList.remove('row-selected'));
+            row.classList.add('row-selected');
+            const radio = row.querySelector('.comp-radio');
+            if (radio) radio.checked = true;
+
+            const id = row.getAttribute('data-id');
+            const name = row.getAttribute('data-name');
+            const status = row.getAttribute('data-status');
+            const commission = row.getAttribute('data-commission');
+            const isHost = row.getAttribute('data-ishost') === 'true';
+
+            badge.className = 'badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-2';
+            badge.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Selected';
+            nameLabel.innerHTML = '<strong>' + name + '</strong> (' + status + ')';
+
+            if (isHost) {
+                hostBadge.classList.remove('d-none');
+                btnApprove.disabled = true;
+                btnReject.disabled = true;
+                btnSuspend.disabled = true;
+                btnCommission.disabled = true;
+            } else {
+                hostBadge.classList.add('d-none');
+
+                btnApprove.disabled = (status === 'Approved');
+                modalApproveId.value = id;
+                modalApproveTitle.textContent = name;
+                modalApproveCommission.value = commission;
+
+                btnReject.disabled = (status === 'Rejected');
+                rejectId.value = id;
+
+                btnSuspend.disabled = false;
+                suspendId.value = id;
+                if (status === 'Suspended') {
+                    suspendText.textContent = 'Activate';
+                    suspendIcon.className = 'bi bi-play me-1';
+                    btnSuspend.className = 'btn btn-sm btn-outline text-success';
+                } else {
+                    suspendText.textContent = 'Suspend';
+                    suspendIcon.className = 'bi bi-pause me-1';
+                    btnSuspend.className = 'btn btn-sm btn-outline text-warning';
+                }
+
+                btnCommission.disabled = false;
+                modalCommissionId.value = id;
+                modalCommissionTitle.textContent = name;
+                modalCommissionRate.value = commission;
+            }
+        }
+
+        table.querySelectorAll('tbody tr.selectable-row').forEach(row => {
+            row.addEventListener('click', function () {
+                selectCompany(this);
+            });
+        });
+
+        table.querySelectorAll('.comp-radio').forEach(radio => {
+            radio.addEventListener('change', function () {
+                const row = this.closest('tr');
+                if (row) selectCompany(row);
+            });
+        });
+    });
+</script>
+}
+

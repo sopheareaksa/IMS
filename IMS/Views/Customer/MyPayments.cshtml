@@ -1,0 +1,97 @@
+@model IEnumerable<IMS.Models.Payment>
+@{
+    ViewData["Title"] = "My Payment Receipts";
+}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">My Payment Receipts</div>
+        <div class="page-header-sub">Official verified records of premiums paid via Bakong KHQR or Direct Card/Bank transfer.</div>
+    </div>
+    <div class="page-header-actions">
+        <a asp-action="Profile" class="btn btn-outline btn-sm">
+            <i class="bi bi-person-gear"></i> Account Profile
+        </a>
+        <a asp-action="MyPolicies" class="btn btn-primary btn-sm">
+            <i class="bi bi-shield-check"></i> My Policies
+        </a>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-receipt me-2 text-primary"></i>Transaction Payment Receipts</div>
+        <span class="badge badge-gray">@Model.Count() records</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Receipt Reference</th>
+                    <th>Policy & Plan</th>
+                    <th>Payment Method</th>
+                    <th>Date & Time</th>
+                    <th>Amount Paid</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var p in Model)
+                    {
+                        <tr>
+                            <td>
+                                <code class="fw-bold text-dark font-monospace">@p.transactionRef</code>
+                            </td>
+                            <td>
+                                <div class="cell-primary fw-bold text-dark">@(p.InsurancePolicy?.policyNumber ?? "N/A")</div>
+                                <div class="cell-sub">@(p.InsurancePolicy?.Quotation?.InsuranceProduct?.name ?? "Coverage")</div>
+                            </td>
+                            <td>
+                                @if (p.payMethod.Contains("KHQR") || p.payMethod.Contains("Bakong"))
+                                {
+                                    <span class="badge badge-danger"><i class="bi bi-qr-code me-1"></i>@p.payMethod</span>
+                                }
+                                else if (p.payMethod.Contains("Card"))
+                                {
+                                    <span class="badge badge-primary"><i class="bi bi-credit-card-2-front me-1"></i>@p.payMethod</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-success"><i class="bi bi-bank me-1"></i>@p.payMethod</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="text-dark small font-monospace">@p.payDate.ToString("yyyy-MM-dd HH:mm")</div>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-success fs-6">$@p.payAmount.ToString("N2")</span>
+                            </td>
+                            <td>
+                                <span class="badge @(p.payStatus == "Completed" ? "badge-success" : p.payStatus == "Pending" ? "badge-warning" : p.payStatus == "Refunded" ? "badge-primary" : "badge-danger")">
+                                    <i class="bi @(p.payStatus == "Completed" ? "bi-check-circle" : p.payStatus == "Pending" ? "bi-clock-history" : "bi-arrow-counterclockwise") me-1"></i>@p.payStatus
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="empty-state-icon"><i class="bi bi-receipt"></i></div>
+                                <div class="empty-state-title">No receipts found</div>
+                                <div class="empty-state-desc">You have not completed any insurance payments yet.</div>
+                                <a asp-action="MyQuotations" class="btn btn-primary btn-md">
+                                    <i class="bi bi-chat-left-quote me-1"></i> View Quotations
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

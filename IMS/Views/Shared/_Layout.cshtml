@@ -1,50 +1,569 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
+@{
+    // Some views already append " - InsureHub" to ViewData["Title"]; strip it so the
+    // browser title and the topbar never render the brand twice.
+    var rawTitle = ViewData["Title"] as string ?? "InsureHub";
+    var pageTitle = rawTitle.EndsWith(" - InsureHub", StringComparison.Ordinal)
+        ? rawTitle[..^" - InsureHub".Length]
+        : rawTitle;
+}
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - IMS</title>
-    <script type="importmap"></script>
+    <title>@pageTitle - InsureHub</title>
+    <meta name="description" content="InsureHub - Enterprise Insurance Management Platform" />
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap & Icons -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+    <!-- InsureHub Design System -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/IMS.styles.css" asp-append-version="true" />
+
+    <!-- Tailwind utilities + lucide icons. Preflight is disabled so Bootstrap's
+         base styles and site.css keep rendering the Admin/Agent pages unchanged. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { corePlugins: { preflight: false } };
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">IMS</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
+@{
+    var curController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var curAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    bool isAuthenticated = User.Identity != null && User.Identity.IsAuthenticated;
+    bool isOverviewActive = (curController == "Admin" && curAction == "Dashboard") ||
+                            (curController == "Agent" && curAction == "Dashboard") ||
+                            (curController == "Customer" && curAction == "Dashboard");
+}
+
+@if (isAuthenticated)
+{
+    <!-- Mobile Backdrop -->
+    <div id="sidebarBackdrop" onclick="toggleSidebar(false)"></div>
+
+    <!-- ════ SIDEBAR ════ -->
+    <aside id="mainSidebar">
+        <!-- Brand -->
+        <a class="sidebar-brand" asp-controller="Home" asp-action="Index">
+            <div class="sidebar-brand-icon">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <div>
+                <div class="sidebar-brand-name">Insure<span>Hub</span></div>
+                <div class="sidebar-brand-sub">
+                    @if (User.IsInRole("Admin")) { <text>Admin Console</text> }
+                    else if (User.IsInRole("Agent")) { <text>Agency Portal</text> }
+                    else if (User.IsInRole("Staff")) { <text>Agency Staff</text> }
+                    else if (User.IsInRole("Customer")) { <text>Client Portal</text> }
+                    else { <text>Ecosystem</text> }
+                </div>
+            </div>
+        </a>
+
+        <!-- Mobile Close -->
+        <button type="button" id="sidebarCloseBtn" onclick="toggleSidebar(false)" aria-label="Close Sidebar"
+            style="position:absolute;top:14px;right:14px;display:none;background:none;border:none;font-size:20px;color:#6b7280;cursor:pointer;">
+            <i class="bi bi-x-lg"></i>
+        </button>
+
+        <!-- Nav -->
+        <div class="sidebar-scroll">
+            <span class="sidebar-section-label">Main</span>
+            @if (User.IsInRole("Admin"))
+            {
+                <a asp-controller="Admin" asp-action="Dashboard" class="sidebar-nav-link @(isOverviewActive ? "active" : "")">
+                    <i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span>
+                </a>
+            }
+            else if (User.IsInRole("Agent") || User.IsInRole("Staff"))
+            {
+                <a asp-controller="Agent" asp-action="Dashboard" class="sidebar-nav-link @(isOverviewActive ? "active" : "")">
+                    <i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span>
+                </a>
+            }
+            else if (User.IsInRole("Customer"))
+            {
+                <a asp-controller="Customer" asp-action="Dashboard" class="sidebar-nav-link @(isOverviewActive ? "active" : "")">
+                    <i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span>
+                </a>
+            }
+
+            <span class="sidebar-section-label">
+                @if (User.IsInRole("Admin")) { <text>Administration</text> }
+                else if (User.IsInRole("Agent") || User.IsInRole("Staff")) { <text>Operations</text> }
+                else { <text>My Insurance</text> }
+            </span>
+
+            @if (User.IsInRole("Admin"))
+            {
+                <a asp-controller="Admin" asp-action="Companies" class="sidebar-nav-link @(curController=="Admin"&&curAction=="Companies"?"active":"")">
+                    <i class="bi bi-buildings"></i><span>Companies</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Staff" class="sidebar-nav-link @(curController=="Admin"&&curAction=="Staff"?"active":"")">
+                    <i class="bi bi-people"></i><span>Staff Members</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Products" class="sidebar-nav-link @(curController=="Admin"&&curAction=="Products"?"active":"")">
+                    <i class="bi bi-box-seam"></i><span>Products Catalog</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Quotations" class="sidebar-nav-link @(curController=="Admin"&&curAction=="Quotations"?"active":"")">
+                    <i class="bi bi-chat-left-quote"></i><span>Quotations</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Policies" class="sidebar-nav-link @(curController=="Admin"&&curAction=="Policies"?"active":"")">
+                    <i class="bi bi-file-earmark-medical"></i><span>Insurance</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Claims" class="sidebar-nav-link @(curController=="Admin"&&curAction=="Claims"?"active":"")">
+                    <i class="bi bi-exclamation-octagon"></i><span>Incident Claims</span>
+                </a>
+                <a asp-controller="Admin" asp-action="InsuranceTypes" class="sidebar-nav-link @(curController=="Admin"&&curAction=="InsuranceTypes"?"active":"")">
+                    <i class="bi bi-tags"></i><span>Insurance Types</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Reports" class="sidebar-nav-link @(curController=="Admin"&&curAction=="Reports"?"active":"")">
+                    <i class="bi bi-graph-up"></i><span>Financial Reports</span>
+                </a>
+            }
+            else if (User.IsInRole("Agent") || User.IsInRole("Staff"))
+            {
+                <a asp-controller="Agent" asp-action="Quotations" class="sidebar-nav-link @(curController=="Agent"&&curAction=="Quotations"?"active":"")">
+                    <i class="bi bi-chat-left-quote"></i><span>Quotations</span>
+                </a>
+                <a asp-controller="Agent" asp-action="Products" class="sidebar-nav-link @(curController=="Agent"&&curAction=="Products"?"active":"")">
+                    <i class="bi bi-box-seam"></i><span>My Products</span>
+                </a>
+                <a asp-controller="Agent" asp-action="Policies" class="sidebar-nav-link @(curController=="Agent"&&curAction=="Policies"?"active":"")">
+                    <i class="bi bi-file-earmark-medical"></i><span>Insurance</span>
+                </a>
+                <a asp-controller="Agent" asp-action="Claims" class="sidebar-nav-link @(curController=="Agent"&&curAction=="Claims"?"active":"")">
+                    <i class="bi bi-exclamation-octagon"></i><span>Incident Claims</span>
+                </a>
+                <a asp-controller="Agent" asp-action="Reports" class="sidebar-nav-link @(curController=="Agent"&&curAction=="Reports"?"active":"")">
+                    <i class="bi bi-graph-up"></i><span>Financial Reports</span>
+                </a>
+                @if (User.IsInRole("Agent"))
+                {
+                    <a asp-controller="Agent" asp-action="MyStaff" class="sidebar-nav-link @(curController=="Agent"&&curAction=="MyStaff"?"active":"")">
+                        <i class="bi bi-person-badge"></i><span>My Staff</span>
+                    </a>
+                }
+            }
+            else if (User.IsInRole("Customer"))
+            {
+                <a asp-controller="Products" asp-action="Index" class="sidebar-nav-link @(curController=="Products"&&curAction=="Index"?"active":"")">
+                    <i class="bi bi-grid"></i><span>Browse Plans</span>
+                </a>
+                <a asp-controller="Customer" asp-action="MyQuotations" class="sidebar-nav-link @(curController=="Customer"&&curAction=="MyQuotations"?"active":"")">
+                    <i class="bi bi-chat-left-quote"></i><span>My Quotations</span>
+                </a>
+                <a asp-controller="Customer" asp-action="MyPolicies" class="sidebar-nav-link @(curController=="Customer"&&curAction=="MyPolicies"?"active":"")">
+                    <i class="bi bi-shield-check"></i><span>Insurance</span>
+                </a>
+                <a asp-controller="Customer" asp-action="SubmitClaim" class="sidebar-nav-link @(curController=="Customer"&&curAction=="SubmitClaim"?"active":"")">
+                    <i class="bi bi-exclamation-octagon"></i><span>File a Claim</span>
+                </a>
+                <a asp-controller="Customer" asp-action="Profile" class="sidebar-nav-link @(curController=="Customer"&&curAction=="Profile"?"active":"")">
+                    <i class="bi bi-person-gear"></i><span>Account Profile</span>
+                </a>
+                <a asp-controller="Customer" asp-action="MyPayments" class="sidebar-nav-link @(curController=="Customer"&&curAction=="MyPayments"?"active":"")">
+                    <i class="bi bi-wallet2"></i><span>Payment Receipts</span>
+                </a>
+            }
+
+            <span class="sidebar-section-label">System</span>
+            @if (!User.IsInRole("Customer"))
+            {
+                <a asp-controller="Products" asp-action="Index" class="sidebar-nav-link @(curController=="Products"&&curAction=="Index"?"active":"")">
+                    <i class="bi bi-compass"></i><span>Marketplace</span>
+                </a>
+            }
+            <a asp-controller="Notifications" asp-action="Index" class="sidebar-nav-link @(curController=="Notifications"&&curAction=="Index"?"active":"")">
+                <i class="bi bi-bell"></i><span>Notifications</span>
+            </a>
+        </div>
+
+        <!-- Footer User Card -->
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <a asp-controller="Auth" asp-action="Profile" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;text-decoration:none;">
+                    <div class="sidebar-avatar">
+                        @(User.Identity?.Name?.Length > 0 ? User.Identity.Name.Substring(0,1).ToUpper() : "U")
+                    </div>
+                    <div style="min-width:0;">
+                        <div style="font-size:12px;font-weight:700;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@(User.FindFirst("FullName")?.Value ?? User.Identity?.Name)</div>
+                        <div style="font-size:11px;color:#2563eb;font-weight:600;">@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</div>
+                    </div>
+                </a>
+                <form asp-controller="Auth" asp-action="Logout" method="post" style="margin:0;flex-shrink:0;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" title="Sign Out"
+                        style="width:30px;height:30px;border-radius:8px;border:none;background:none;color:#9ca3af;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .15s;"
+                        onmouseover="this.style.color='#e11d48';this.style.background='#fff1f2';"
+                        onmouseout="this.style.color='#9ca3af';this.style.background='none';">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ════ MAIN CONTENT ════ -->
+    <div class="main-content">
+
+        <!-- Topbar -->
+        <header id="mainTopbar">
+            <!-- Hamburger (mobile) -->
+            <button type="button" id="sidebarToggleBtn" onclick="toggleSidebar(true)" aria-label="Open Sidebar"
+                style="width:36px;height:36px;border-radius:8px;background:#f3f4f6;border:none;color:#374151;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">
+                <i class="bi bi-list"></i>
+            </button>
+
+            <!-- Page Title -->
+            <div class="topbar-title" style="flex-shrink:0;">
+                @if (isOverviewActive) { <text>Dashboard</text> } else { @pageTitle }
+            </div>
+
+            <!-- Search -->
+            <div class="topbar-search">
+                <i class="bi bi-search"></i>
+                <input type="text" placeholder="Search anything..." />
+            </div>
+
+            <!-- Spacer -->
+            <div style="flex:1;"></div>
+
+            <!-- Notification Bell -->
+            <div class="dropdown" style="flex-shrink:0;">
+                <button class="position-relative" type="button" id="notificationBell" data-bs-toggle="dropdown" aria-expanded="false"
+                    style="width:36px;height:36px;border-radius:8px;background:#f3f4f6;border:none;color:#374151;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;">
+                    <i class="bi bi-bell"></i>
+                    <span id="unreadBadge" class="pulse-badge d-none"
+                        style="position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;background:#e11d48;color:#fff;font-size:10px;font-weight:700;border-radius:99px;display:flex;align-items:center;justify-content:center;">
+                        0
+                    </span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 mt-2 rounded-3 overflow-hidden" aria-labelledby="notificationBell" style="width:340px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;">
+                        <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#374151;">
+                            <i class="bi bi-bell-fill" style="color:#2563eb;"></i> Notifications
+                        </div>
+                        <a asp-controller="Notifications" asp-action="Index" style="font-size:12px;font-weight:600;color:#2563eb;text-decoration:none;">View All</a>
+                    </div>
+                    <div id="notificationItemsList" style="max-height:280px;overflow-y:auto;">
+                        <div style="padding:16px;text-align:center;color:#9ca3af;font-size:12px;">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile -->
+            <div class="dropdown" style="flex-shrink:0;">
+                <button class="d-flex align-items-center gap-2 border-0 bg-transparent p-1 rounded-3" style="cursor:pointer;" type="button" id="userProfileDrop" data-bs-toggle="dropdown" aria-expanded="false">
+                    <div style="width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#2563eb,#6366f1);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">
+                        @(User.Identity?.Name?.Length > 0 ? User.Identity.Name.Substring(0,1).ToUpper() : "U")
+                    </div>
+                    <div class="text-start d-none d-sm-block">
+                        <div style="font-size:12px;font-weight:700;color:#111827;line-height:1.2;">@(User.FindFirst("FullName")?.Value ?? User.Identity?.Name)</div>
+                        <div style="font-size:10px;font-weight:600;color:#2563eb;">@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</div>
+                    </div>
+                    <i class="bi bi-chevron-down d-none d-sm-block" style="font-size:11px;color:#9ca3af;"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 p-2 mt-2" style="width:240px;">
+                    <li style="padding:8px 12px;margin-bottom:4px;border-bottom:1px solid #f3f4f6;">
+                        <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Signed in as</div>
+                        <div style="font-size:12px;font-weight:700;color:#111827;">@User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value</div>
+                        @if (User.FindFirst("CompanyName") != null) {
+                            <div style="font-size:11px;color:#2563eb;font-weight:600;margin-top:2px;"><i class="bi bi-building"></i> @User.FindFirst("CompanyName")?.Value</div>
+                        }
+                    </li>
+                    <li>
+                        <a class="dropdown-item rounded-2 py-2 d-flex align-items-center gap-2" style="font-size:12.5px;font-weight:500;" asp-controller="Auth" asp-action="Profile">
+                            <i class="bi bi-person-gear text-secondary"></i> Account Profile
+                        </a>
+                    </li>
+                    @if (User.IsInRole("Customer")) {
+                        <li>
+                            <a class="dropdown-item rounded-2 py-2 d-flex align-items-center gap-2" style="font-size:12.5px;font-weight:500;" asp-controller="Customer" asp-action="MyPayments">
+                                <i class="bi bi-wallet2 text-secondary"></i> Payment Receipts
+                            </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                    }
+                    <li>
+                        <a class="dropdown-item rounded-2 py-2 d-flex align-items-center gap-2" style="font-size:12.5px;font-weight:500;" asp-controller="Notifications" asp-action="Index">
+                            <i class="bi bi-bell text-secondary"></i> Notifications
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider my-1"></li>
+                    <li>
+                        <form asp-controller="Auth" asp-action="Logout" method="post" class="m-0">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="dropdown-item rounded-2 py-2 d-flex align-items-center gap-2 w-100 text-start" style="font-size:12.5px;font-weight:500;color:#e11d48;">
+                                <i class="bi bi-box-arrow-right"></i> Sign Out
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </header>
+
+        <!-- Main Body -->
+        <main class="page-body">
+            <!-- TempData Alerts -->
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert-banner success" role="alert">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <div class="alert-icon" style="background:#059669;color:#fff;"><i class="bi bi-check-lg"></i></div>
+                        <span>@TempData["SuccessMessage"]</span>
+                    </div>
+                    <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:#065f46;font-size:15px;">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert-banner danger" role="alert">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <div class="alert-icon" style="background:#e11d48;color:#fff;"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                        <span>@TempData["ErrorMessage"]</span>
+                    </div>
+                    <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:#881337;font-size:15px;">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            }
+
+            @RenderBody()
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:22px;height:22px;border-radius:6px;background:#2563eb;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <span style="font-weight:700;color:#374151;font-size:13px;">Insure<span style="color:#2563eb;">Hub</span></span>
+                <span style="color:#d1d5db;">|</span>
+                <span>&copy; 2026 Enterprise Insurance Ecosystem. All rights reserved.</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px;">
+                <a asp-controller="Products" asp-action="Index" style="color:#9ca3af;text-decoration:none;font-size:12px;">Browse Plans</a>
+                <a asp-controller="Home" asp-action="Privacy" style="color:#9ca3af;text-decoration:none;font-size:12px;">Privacy Policy</a>
+            </div>
+        </footer>
+    </div>
+}
+else
+{
+    <!-- ============================================================== -->
+    <!-- PUBLIC / GUEST: TOP NAVIGATION BAR LAYOUT                      -->
+    <!-- ============================================================== -->
+    <header class="public-navbar">
+        <div class="public-nav-container">
+            <!-- Brand Logo -->
+            <div style="display:flex;align-items:center;gap:28px;">
+                <a class="sidebar-brand" asp-controller="Home" asp-action="Index" style="padding:0;border:none;">
+                    <div class="sidebar-brand-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div>
+                        <div class="sidebar-brand-name">Insure<span>Hub</span></div>
+                        <div class="sidebar-brand-sub">Enterprise Portal</div>
+                    </div>
+                </a>
+
+                <!-- Public Nav Links -->
+                <nav class="public-nav-links d-none d-md-flex">
+                    <a class="public-nav-link" asp-controller="Home" asp-action="Index">
+                        <i class="bi bi-house me-1 text-primary"></i> Home
+                    </a>
+                    <a class="public-nav-link" asp-controller="Products" asp-action="Index">
+                        <i class="bi bi-grid me-1 text-primary"></i> Browse Insurance Plans
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Right Menu: Sign In & Register -->
+            <div style="display:flex;align-items:center;gap:10px;">
+                <a class="btn btn-outline btn-md" asp-controller="Auth" asp-action="Login">
+                    <i class="bi bi-box-arrow-in-right"></i> Sign In
+                </a>
+                <div class="dropdown">
+                    <button class="btn btn-primary btn-md dropdown-toggle" type="button" id="regDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        Get Started
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 p-2 mt-2" aria-labelledby="regDropdown" style="min-width:200px;">
+                        <li>
+                            <a class="dropdown-item rounded-2 py-2 d-flex align-items-center gap-2" style="font-size:12.5px;font-weight:600;" asp-controller="Auth" asp-action="RegisterCustomer">
+                                <i class="bi bi-person text-primary"></i> As Customer
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item rounded-2 py-2 d-flex align-items-center gap-2" style="font-size:12.5px;font-weight:600;" asp-controller="Auth" asp-action="RegisterSeller">
+                                <i class="bi bi-building text-primary"></i> As Agency / Seller
+                            </a>
                         </li>
                     </ul>
                 </div>
             </div>
-        </nav>
+        </div>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - IMS - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <!-- Main Container -->
+    <main class="public-main">
+        <!-- Dismissible Alerts -->
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert-banner success" role="alert">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div class="alert-icon" style="background:#059669;color:#fff;"><i class="bi bi-check-lg"></i></div>
+                    <span style="font-weight:600;">@TempData["SuccessMessage"]</span>
+                </div>
+                <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:#065f46;font-size:15px;">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert-banner danger" role="alert">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div class="alert-icon" style="background:#e11d48;color:#fff;"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                    <span style="font-weight:600;">@TempData["ErrorMessage"]</span>
+                </div>
+                <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:#881337;font-size:15px;">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        }
+
+        @RenderBody()
+    </main>
+
+    <!-- Modern Professional Footer -->
+    <footer class="public-footer">
+        <div style="max-width:1240px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:26px;height:26px;border-radius:7px;background:#2563eb;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <span style="font-weight:800;color:#111827;font-size:14px;">Insure<span style="color:#2563eb;">Hub</span></span>
+                <span style="color:#d1d5db;">|</span>
+                <span>&copy; 2026 Enterprise Insurance Ecosystem. All rights reserved.</span>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:20px;">
+                <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:99px;color:#047857;font-size:11px;font-weight:600;">
+                    <span style="width:6px;height:6px;border-radius:50%;background:#10b981;animation:soft-pulse 2s infinite ease-in-out;"></span>
+                    Systems Operational
+                </span>
+                <a asp-controller="Products" asp-action="Index" style="color:#6b7280;text-decoration:none;font-size:12.5px;font-weight:500;">Browse Plans</a>
+                <a asp-controller="Home" asp-action="Privacy" style="color:#6b7280;text-decoration:none;font-size:12.5px;font-weight:500;">Privacy Policy</a>
+            </div>
         </div>
     </footer>
+}
+
+    <!-- Scripts -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        function toggleSidebar(open) {
+            const sidebar = document.getElementById('mainSidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            const closeBtn = document.getElementById('sidebarCloseBtn');
+            if (!sidebar || !backdrop) return;
+            if (open) {
+                sidebar.style.transform = 'translateX(0)';
+                backdrop.style.display = 'block';
+                if (closeBtn) closeBtn.style.display = 'block';
+            } else {
+                sidebar.style.transform = '';
+                backdrop.style.display = 'none';
+                if (closeBtn) closeBtn.style.display = 'none';
+            }
+        }
+        // Hide toggle button on desktop
+        function updateToggleVisibility() {
+            const btn = document.getElementById('sidebarToggleBtn');
+            if (!btn) return;
+            btn.style.display = window.innerWidth >= 1024 ? 'none' : 'flex';
+        }
+        window.addEventListener('resize', updateToggleVisibility);
+        document.addEventListener('DOMContentLoaded', updateToggleVisibility);
+    </script>
+
+    <script>
+        // Renders the <i data-lucide="..."> placeholders used by the Tailwind pages.
+        document.addEventListener('DOMContentLoaded', () => lucide.createIcons());
+    </script>
+
+    @if (User.Identity != null && User.Identity.IsAuthenticated)
+    {
+        <script>
+            // Poll and load notifications for bell icon
+            function loadNotifications() {
+                fetch('/Notifications/GetRecent')
+                    .then(res => res.json())
+                    .then(data => {
+                        const badge = document.getElementById('unreadBadge');
+                        const list = document.getElementById('notificationItemsList');
+                        if (!badge || !list) return;
+
+                        if (data.unreadCount > 0) {
+                            badge.innerText = data.unreadCount > 99 ? '99+' : data.unreadCount;
+                            badge.classList.remove('d-none');
+                        } else {
+                            badge.classList.add('d-none');
+                        }
+
+                        if (!data.notifications || data.notifications.length === 0) {
+                            list.innerHTML = `
+                                <div class="p-6 text-center text-slate-400">
+                                    <i class="bi bi-bell-slash text-2xl d-block mb-1 text-slate-300"></i>
+                                    <div class="text-xs font-medium">No new notifications</div>
+                                </div>`;
+                            return;
+                        }
+
+                        let html = '';
+                        data.notifications.forEach(n => {
+                            const unreadClass = n.isRead ? 'bg-white' : 'bg-brand-50/50';
+                            const indicator = n.isRead ? '' : '<span class="w-2 h-2 rounded-full bg-brand-600 flex-shrink-0"></span>';
+                            const link = n.linkUrl || 'javascript:void(0)';
+                            html += `
+                                <a href="${link}" class="p-3.5 hover:bg-slate-50 transition-colors block text-decoration-none ${unreadClass}">
+                                    <div class="flex items-center justify-between gap-2 mb-1">
+                                        <div class="flex items-center gap-1.5 min-w-0">
+                                            ${indicator}
+                                            <span class="text-xs font-bold text-slate-800 truncate">${n.title}</span>
+                                        </div>
+                                        <span class="text-[10px] text-slate-400 flex-shrink-0">${n.timeAgo}</span>
+                                    </div>
+                                    <p class="text-xs text-slate-500 line-clamp-2 mb-0">${n.message}</p>
+                                </a>
+                            `;
+                        });
+                        list.innerHTML = html;
+                    })
+                    .catch(err => console.error('Notification fetch error:', err));
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                loadNotifications();
+                // Refresh every 30 seconds
+                setInterval(loadNotifications, 30000);
+            });
+        </script>
+    }
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

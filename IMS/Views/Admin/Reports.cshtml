@@ -1,0 +1,874 @@
+@model IMS.ViewModels.FinancialReportViewModel
+@{
+    string pageTitle = Model.Scope switch
+    {
+        "admin" => $"Admin Owner Report - {Model.HostCompanyName}",
+        "partner" => "Partner Companies Report - Admin Portal",
+        _ => "Financial Reports - Admin Portal"
+    };
+    ViewData["Title"] = pageTitle;
+
+    string timeframeLabel = Model.Timeframe switch
+    {
+        "daily" => "Daily (Last 14 Days)",
+        "weekly" => "Weekly (Last 8 Weeks)",
+        "yearly" => "Yearly (Last 5 Years)",
+        _ => "Monthly (Last 12 Months)"
+    };
+}
+
+<!-- ════ EXECUTIVE PAGE HEADER ════ -->
+<div class="page-header" style="align-items: center; margin-bottom: 24px;">
+    <div>
+        @if (Model.Scope == "admin")
+        {
+            <div style="display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; padding: 4px 12px; border-radius: 99px; margin-bottom: 8px;">
+                <i class="bi bi-shield-shaded"></i>
+                Admin Platform Owner &bull; @Model.HostCompanyName
+            </div>
+            <h1 class="page-header-title" style="font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.025em; margin: 0 0 4px 0;">
+                Admin Owner Financial & Business Report
+            </h1>
+            <p class="page-header-sub" style="color: #64748b; font-size: 13.5px; margin: 0;">
+                Direct insurance performance, collections, settled claims, host staff, and customer accounts for @Model.HostCompanyName.
+            </p>
+        }
+        else if (Model.Scope == "partner")
+        {
+            <div style="display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 4px 12px; border-radius: 99px; margin-bottom: 8px;">
+                <i class="bi bi-buildings"></i>
+                Partner Companies Report &bull; Agency Workforce
+            </div>
+            <h1 class="page-header-title" style="font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.025em; margin: 0 0 4px 0;">
+                Partner Companies Performance Report
+            </h1>
+            <p class="page-header-sub" style="color: #64748b; font-size: 13.5px; margin: 0;">
+                Underwritten policies, premium collections, settled claim ratios, and workforce capacity across partner insurance carriers.
+            </p>
+        }
+        else
+        {
+            <div style="display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; padding: 4px 12px; border-radius: 99px; margin-bottom: 8px;">
+                <i class="bi bi-graph-up-arrow"></i>
+                Full Platform Analytics &bull; Consolidated Ledger
+            </div>
+            <h1 class="page-header-title" style="font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.025em; margin: 0 0 4px 0;">
+                Financial & Revenue Reports
+            </h1>
+            <p class="page-header-sub" style="color: #64748b; font-size: 13.5px; margin: 0;">
+                Consolidated financial ledger showing Admin Owner operations and all partner company performance.
+            </p>
+        }
+    </div>
+
+    <!-- Header Actions (Strictly Outside Table) -->
+    <div class="page-header-actions" style="display: flex; gap: 10px; align-items: center;">
+        <button type="button" onclick="window.print()" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 8px 14px; border-radius: 8px;">
+            <i class="bi bi-printer"></i> Print Statement
+        </button>
+        <button type="button" onclick="exportTableToCSV('@(Model.Scope)-financial-report.csv')" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 8px 14px; border-radius: 8px;">
+            <i class="bi bi-download"></i> Export CSV
+        </button>
+    </div>
+</div>
+
+<!-- ════ INTERACTIVE CONTROLS TOOLBAR (OUTSIDE TABLE) ════ -->
+<div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 20px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+    <form id="filterForm" method="get" asp-action="Reports" style="display: flex; flex-direction: column; gap: 16px;">
+        <input type="hidden" name="timeframe" id="timeframeInput" value="@Model.Timeframe" />
+        <input type="hidden" name="scope" id="scopeInput" value="@Model.Scope" />
+
+        <!-- Row 1: Report Scope Switcher (Admin Owner vs Partner Companies vs Full Platform) -->
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="font-size: 13px; font-weight: 700; color: #334155;">
+                    <i class="bi bi-layers-half text-primary me-1"></i> Report View:
+                </span>
+                <div style="display: inline-flex; background: #f1f5f9; padding: 4px; border-radius: 10px; border: 1px solid #e2e8f0; gap: 4px; flex-wrap: wrap;">
+                    <button type="button" onclick="setScope('admin')"
+                            class="scope-pill @(Model.Scope == "admin" ? "active" : "")">
+                        <i class="bi bi-shield-shaded me-1 text-primary"></i>
+                        <span>Admin Owner Report <small style="opacity: 0.8;">(@Model.HostCompanyName)</small></span>
+                    </button>
+                    <button type="button" onclick="setScope('partner')"
+                            class="scope-pill @(Model.Scope == "partner" ? "active" : "")">
+                        <i class="bi bi-buildings me-1 text-warning"></i>
+                        <span>Partner Companies Report</span>
+                    </button>
+                    <button type="button" onclick="setScope('all')"
+                            class="scope-pill @(Model.Scope == "all" ? "active" : "")">
+                        <i class="bi bi-grid-1x2 me-1 text-info"></i>
+                        <span>Full Platform Overview</span>
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                @if (Model.Scope == "admin")
+                {
+                    <span style="font-size: 12px; font-weight: 600; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; padding: 5px 12px; border-radius: 8px;">
+                        <i class="bi bi-shield-check me-1"></i> Platform Owner Direct Account
+                    </span>
+                }
+                else if (Model.Scope == "partner")
+                {
+                    <span style="font-size: 12px; font-weight: 600; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 5px 12px; border-radius: 8px;">
+                        <i class="bi bi-people me-1"></i> @Model.PartnerCompanies.Count Partner Companies
+                    </span>
+                }
+                else
+                {
+                    <span style="font-size: 12px; font-weight: 600; color: #475569; background: #f8fafc; border: 1px solid #e2e8f0; padding: 5px 12px; border-radius: 8px;">
+                        <i class="bi bi-layers me-1"></i> Admin Owner + All Partners
+                    </span>
+                }
+            </div>
+        </div>
+
+        <!-- Row 2: Timeframe & Carrier Filter -->
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;">
+            <!-- Timeframe Segmented Control (Pills) -->
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 13px; font-weight: 600; color: #475569;">
+                    <i class="bi bi-calendar3 me-1"></i> Period:
+                </span>
+                <div style="display: inline-flex; background: #f1f5f9; padding: 3px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                    <button type="button" onclick="setTimeframe('daily')"
+                            class="pill-toggle @(Model.Timeframe == "daily" ? "active" : "")">
+                        Daily
+                    </button>
+                    <button type="button" onclick="setTimeframe('weekly')"
+                            class="pill-toggle @(Model.Timeframe == "weekly" ? "active" : "")">
+                        Weekly
+                    </button>
+                    <button type="button" onclick="setTimeframe('monthly')"
+                            class="pill-toggle @(Model.Timeframe == "monthly" ? "active" : "")">
+                        Monthly
+                    </button>
+                    <button type="button" onclick="setTimeframe('yearly')"
+                            class="pill-toggle @(Model.Timeframe == "yearly" ? "active" : "")">
+                        Yearly
+                    </button>
+                </div>
+            </div>
+
+            <!-- Carrier Filter Control -->
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                @if (Model.Scope == "admin")
+                {
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #1e293b; background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 14px; border-radius: 8px;">
+                        <i class="bi bi-shield-shaded text-primary"></i>
+                        <span>Carrier: <strong>@Model.HostCompanyName</strong> (Admin Platform Owner)</span>
+                    </div>
+                }
+                else
+                {
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label for="companyFilter" style="font-size: 13px; font-weight: 600; color: #475569; margin: 0; white-space: nowrap;">
+                            <i class="bi bi-buildings me-1"></i> Partner Carrier:
+                        </label>
+                        <select id="companyFilter" name="companyId" onchange="this.form.submit()"
+                                style="font-size: 13px; padding: 7px 32px 7px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background-color: #f8fafc; color: #1e293b; font-weight: 500; cursor: pointer; outline: none; min-width: 200px;">
+                            <option value="">All Partner Companies</option>
+                            @foreach (var comp in Model.PartnerCompanies)
+                            {
+                                if (Model.SelectedCompanyId == comp.companyId)
+                                {
+                                    <option value="@comp.companyId" selected>@comp.name</option>
+                                }
+                                else
+                                {
+                                    <option value="@comp.companyId">@comp.name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    @if (Model.SelectedCompanyId.HasValue)
+                    {
+                        <a asp-action="Reports" asp-route-scope="@Model.Scope" asp-route-timeframe="@Model.Timeframe" class="btn btn-sm"
+                           style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 8px; text-decoration: none;">
+                            <i class="bi bi-x-circle me-1"></i> Reset Carrier Filter
+                        </a>
+                    }
+                }
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- ════ EXECUTIVE KPI SUMMARY CARDS ════ -->
+<div class="row g-3" style="margin-bottom: 24px;">
+    <!-- Total Collected Premiums -->
+    <div class="col-12 col-sm-6 col-lg-4">
+        <div class="report-kpi-card">
+            <div class="report-kpi-header">
+                <span class="report-kpi-label">
+                    @(Model.Scope == "admin" ? "Admin Premiums Collected" : (Model.Scope == "partner" ? "Partner Premiums Collected" : "Total Premiums Collected"))
+                </span>
+                <div class="report-kpi-icon" style="background: #eff6ff; color: #2563eb;">
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+            </div>
+            <div class="report-kpi-value" style="color: #0f172a;">
+                $@Model.TotalRevenue.ToString("N2")
+            </div>
+            <div class="report-kpi-sub" style="color: #16a34a;">
+                <i class="bi bi-check-circle-fill me-1"></i>
+                @(Model.Scope == "admin" ? $"{Model.HostCompanyName} verified receipts" : "Completed verified receipts")
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Claims Settled -->
+    <div class="col-12 col-sm-6 col-lg-4">
+        <div class="report-kpi-card">
+            <div class="report-kpi-header">
+                <span class="report-kpi-label">
+                    @(Model.Scope == "admin" ? "Admin Claims Paid" : (Model.Scope == "partner" ? "Partner Claims Paid" : "Claims Paid Liabilities"))
+                </span>
+                <div class="report-kpi-icon" style="background: #fef2f2; color: #dc2626;">
+                    <i class="bi bi-shield-x"></i>
+                </div>
+            </div>
+            <div class="report-kpi-value" style="color: #dc2626;">
+                $@Model.TotalClaimsPaid.ToString("N2")
+            </div>
+            <div class="report-kpi-sub" style="color: #64748b;">
+                Claim Loss Ratio: <strong style="color: #0f172a;">@Model.ClaimLossRatio%</strong> of premiums
+            </div>
+        </div>
+    </div>
+
+    <!-- Net Platform Margin -->
+    <div class="col-12 col-sm-6 col-lg-4">
+        <div class="report-kpi-card">
+            <div class="report-kpi-header">
+                <span class="report-kpi-label">
+                    @(Model.Scope == "admin" ? "Admin Net Margin" : (Model.Scope == "partner" ? "Partner Net Balance" : "Net Platform Margin"))
+                </span>
+                <div class="report-kpi-icon" style="background: #ecfdf5; color: #059669;">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+            </div>
+            <div class="report-kpi-value" style="color: @(Model.NetRevenue >= 0 ? "#059669" : "#dc2626");">
+                $@Model.NetRevenue.ToString("N2")
+            </div>
+            <div class="report-kpi-sub" style="color: #64748b;">
+                Gross revenue minus approved claims
+            </div>
+        </div>
+    </div>
+
+    <!-- Policies Sold -->
+    <div class="col-12 col-sm-6 col-lg-4">
+        <div class="report-kpi-card">
+            <div class="report-kpi-header">
+                <span class="report-kpi-label">
+                    @(Model.Scope == "admin" ? "Admin Policies Underwritten" : (Model.Scope == "partner" ? "Partner Policies Sold" : "Policies Underwritten"))
+                </span>
+                <div class="report-kpi-icon" style="background: #f8fafc; color: #475569;">
+                    <i class="bi bi-file-earmark-medical"></i>
+                </div>
+            </div>
+            <div class="report-kpi-value" style="color: #0f172a;">
+                @Model.TotalPoliciesCount
+            </div>
+            <div class="report-kpi-sub" style="color: #64748b;">
+                Across <strong style="color: #0f172a;">@Model.TotalTransactionsCount</strong> invoices processed
+            </div>
+        </div>
+    </div>
+
+    <!-- Amount of Staff -->
+    <div class="col-12 col-sm-6 col-lg-4">
+        <div class="report-kpi-card">
+            <div class="report-kpi-header">
+                <span class="report-kpi-label">
+                    @(Model.Scope == "admin" ? "Admin Owner Staff" : (Model.Scope == "partner" ? "Partner Agency Staff" : "Amount of Staff"))
+                </span>
+                <div class="report-kpi-icon" style="background: #e0e7ff; color: #4338ca;">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+            <div class="report-kpi-value" style="color: #4338ca;">
+                @Model.TotalStaffCount
+            </div>
+            <div class="report-kpi-sub" style="color: #64748b;">
+                @(Model.Scope == "admin" ? $"Active representatives for {Model.HostCompanyName}" : (Model.Scope == "partner" ? "Active partner agency workforce" : "Active host & partner workforce"))
+            </div>
+        </div>
+    </div>
+
+    <!-- Amount of Customers that Bought Product -->
+    <div class="col-12 col-sm-6 col-lg-4">
+        <div class="report-kpi-card">
+            <div class="report-kpi-header">
+                <span class="report-kpi-label">Customer Buyers</span>
+                <div class="report-kpi-icon" style="background: #fef3c7; color: #d97706;">
+                    <i class="bi bi-person-check-fill"></i>
+                </div>
+            </div>
+            <div class="report-kpi-value" style="color: #d97706;">
+                @Model.TotalCustomersCount
+            </div>
+            <div class="report-kpi-sub" style="color: #64748b;">
+                @(Model.Scope == "admin" ? $"Distinct customers buying {Model.HostCompanyName} plans" : "Distinct customers that bought insurance plans")
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Scope == "all")
+{
+    <!-- ════ ADMIN OWNER REPORT SHOWCASE (INSUREHUB DIRECT) ════ -->
+    <div style="background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%); border: 1.5px solid #bfdbfe; border-radius: 14px; padding: 20px 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(37,99,235,0.06);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="width: 48px; height: 48px; border-radius: 12px; background: #2563eb; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
+                    <i class="bi bi-shield-shaded"></i>
+                </div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 11px; font-weight: 700; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.05em; background: #ffffff; padding: 2px 8px; border-radius: 99px; border: 1px solid #bfdbfe;">
+                            Platform Owner
+                        </span>
+                        <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin: 0;">
+                            Admin Owner Report &bull; @Model.HostCompanyName
+                        </h2>
+                    </div>
+                    <div style="font-size: 12.5px; color: #64748b; margin-top: 3px;">
+                        Direct platform operations, dedicated staff representatives, underwritten policies, and customer accounts.
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap;">
+                <div style="text-align: right;">
+                    <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase;">Admin Staff</div>
+                    <div style="font-size: 16px; font-weight: 800; color: #4338ca;">@Model.AdminStaffCount Staff</div>
+                </div>
+                <div style="width: 1px; height: 30px; background: #cbd5e1;"></div>
+                <div style="text-align: right;">
+                    <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase;">Customer Buyers</div>
+                    <div style="font-size: 16px; font-weight: 800; color: #d97706;">@Model.AdminCustomersCount Customers</div>
+                </div>
+                <div style="width: 1px; height: 30px; background: #cbd5e1;"></div>
+                <div style="text-align: right;">
+                    <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase;">Direct Revenue</div>
+                    <div style="font-size: 16px; font-weight: 800; color: #2563eb;">$@Model.AdminRevenue.ToString("N2")</div>
+                </div>
+                <button type="button" onclick="setScope('admin')" class="btn btn-sm btn-primary" style="font-size: 12.5px; font-weight: 600; padding: 8px 16px; border-radius: 8px; margin-left: 6px;">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> View Admin Owner Report
+                </button>
+            </div>
+        </div>
+    </div>
+}
+else if (Model.Scope == "admin")
+{
+    <!-- ════ ADMIN OWNER DIRECT ENTITY PROFILE ════ -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 22px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 44px; height: 44px; border-radius: 10px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                    <i class="bi bi-shield-shaded"></i>
+                </div>
+                <div>
+                    <h2 style="font-size: 16px; font-weight: 800; color: #0f172a; margin: 0 0 2px 0;">
+                        @Model.HostCompanyName Operations Overview
+                    </h2>
+                    <div style="font-size: 12.5px; color: #64748b;">
+                        Official Admin Platform Owner &bull; Managing host insurance products, platform staff, and direct policyholders.
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <a asp-action="StaffMembers" class="btn btn-outline btn-sm" style="font-size: 12.5px; font-weight: 600; padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 8px; color: #334155; text-decoration: none; background: #ffffff;">
+                    <i class="bi bi-people me-1"></i> Manage Staff (@Model.AdminStaffCount)
+                </a>
+                <a asp-action="Products" class="btn btn-outline btn-sm" style="font-size: 12.5px; font-weight: 600; padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 8px; color: #334155; text-decoration: none; background: #ffffff;">
+                    <i class="bi bi-box-seam me-1"></i> Host Products Catalog
+                </a>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-12 col-md-4">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px;">
+                    <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Host Entity Info</div>
+                    <div style="font-size: 14px; font-weight: 700; color: #0f172a;">@Model.HostCompanyName</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+                        Email: @(Model.HostCompanyReport?.CompanyEmail ?? "admin@insurehub.com")<br />
+                        Phone: @(Model.HostCompanyReport?.CompanyPhone ?? "+1 (800) 555-0199")
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px;">
+                    <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Active Host Staff</div>
+                    <div style="font-size: 14px; font-weight: 700; color: #4338ca;">@Model.AdminStaffCount Representative(s)</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+                        Dedicated platform representatives handling direct underwriting & claims.
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px;">
+                    <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Customer Buyers / Inquiries</div>
+                    <div style="font-size: 14px; font-weight: 700; color: #d97706;">@Model.AdminCustomersCount Customer(s)</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+                        Distinct customers who purchased or requested @Model.HostCompanyName coverage.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.Scope != "admin")
+{
+    <!-- ════ PARTNER COMPANY REPORTS: STAFF & CUSTOMERS BREAKDOWN (OUTSIDE TABLE) ════ -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); overflow: hidden; margin-bottom: 24px;">
+        <!-- Toolbar Strictly Outside Table -->
+        <div style="padding: 18px 22px; border-bottom: 1px solid #f1f5f9; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;">
+            <div>
+                <h2 style="font-size: 16px; font-weight: 700; color: #0f172a; margin: 0 0 2px 0;">
+                    <i class="bi bi-buildings me-2 text-warning"></i> Partner Company Performance & Workforce Report
+                </h2>
+                <div style="font-size: 12.5px; color: #64748b;">
+                    Amount of staff representatives and amount of customers purchasing policies per partner company.
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <div style="position: relative;">
+                    <i class="bi bi-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #94a3b8;"></i>
+                    <input type="text" id="companyReportSearch" onkeyup="filterCompanyReportTable()" placeholder="Search partner company..."
+                           style="font-size: 12.5px; padding: 7px 12px 7px 28px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; width: 220px;" />
+                </div>
+                <a asp-action="Companies" class="btn btn-outline btn-sm" style="font-size: 12.5px; font-weight: 600; padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 8px; color: #334155; text-decoration: none; background: #ffffff;">
+                    <i class="bi bi-gear me-1"></i> Manage Partners
+                </a>
+            </div>
+        </div>
+
+        <!-- Company Performance Table -->
+        <div class="table-responsive">
+            <table class="table" id="companyReportTable" style="margin-bottom: 0; font-size: 13px; width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #475569; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em;">
+                        <th style="padding: 12px 18px;">Partner Company</th>
+                        <th style="padding: 12px 16px; text-align: center;">Amount of Staff</th>
+                        <th style="padding: 12px 16px; text-align: center;">Customer Buyers</th>
+                        <th style="padding: 12px 16px; text-align: center;">Policies Sold</th>
+                        <th style="padding: 12px 16px; text-align: right;">Gross Premiums</th>
+                        <th style="padding: 12px 16px; text-align: right;">Claims Paid</th>
+                        <th style="padding: 12px 16px; text-align: right;">Net Balance</th>
+                        <th style="padding: 12px 18px; text-align: center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.CompanyReports.Any())
+                    {
+                        @foreach (var comp in Model.CompanyReports)
+                        {
+                            <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                <td style="padding: 14px 18px;">
+                                    <div style="font-weight: 700; color: #0f172a; font-size: 13.5px;">@comp.CompanyName</div>
+                                    <div style="font-size: 11.5px; color: #64748b;">
+                                        @(comp.CompanyEmail ?? "contact@partner.com") &bull; @(comp.CompanyPhone ?? "N/A")
+                                    </div>
+                                </td>
+                                <td style="padding: 14px 16px; text-align: center;">
+                                    <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: #4338ca; background: #e0e7ff; padding: 4px 12px; border-radius: 99px;">
+                                        <i class="bi bi-people-fill"></i> @comp.StaffCount Staff
+                                    </span>
+                                </td>
+                                <td style="padding: 14px 16px; text-align: center;">
+                                    <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: #d97706; background: #fef3c7; padding: 4px 12px; border-radius: 99px;">
+                                        <i class="bi bi-person-check-fill"></i> @comp.CustomerCount Customers
+                                    </span>
+                                </td>
+                                <td style="padding: 14px 16px; text-align: center; font-weight: 600; color: #334155;">
+                                    @comp.PoliciesCount
+                                </td>
+                                <td style="padding: 14px 16px; text-align: right; font-weight: 700; color: #2563eb;">
+                                    $@comp.TotalRevenue.ToString("N2")
+                                </td>
+                                <td style="padding: 14px 16px; text-align: right; font-weight: 600; color: #dc2626;">
+                                    $@comp.TotalClaimsPaid.ToString("N2")
+                                </td>
+                                <td style="padding: 14px 16px; text-align: right; font-weight: 700; color: @(comp.NetRevenue >= 0 ? "#059669" : "#dc2626");">
+                                    $@comp.NetRevenue.ToString("N2")
+                                </td>
+                                <td style="padding: 14px 18px; text-align: center;">
+                                    <a asp-action="Reports" asp-route-scope="partner" asp-route-companyId="@comp.CompanyId" asp-route-timeframe="@Model.Timeframe"
+                                       class="btn btn-sm" style="font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: #f1f5f9; border: 1px solid #e2e8f0; color: #2563eb; text-decoration: none;">
+                                        Filter Carrier &rarr;
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" style="padding: 30px; text-align: center; color: #94a3b8;">
+                                No partner company records found.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<!-- ════ CUSTOMER BUYERS DIRECTORY (CUSTOMERS THAT BOUGHT PRODUCT) ════ -->
+<div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); overflow: hidden; margin-bottom: 24px;">
+    <!-- Toolbar Strictly Outside Table -->
+    <div style="padding: 18px 22px; border-bottom: 1px solid #f1f5f9; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;">
+        <div>
+            <h2 style="font-size: 16px; font-weight: 700; color: #0f172a; margin: 0 0 2px 0;">
+                <i class="bi bi-person-check me-2 text-warning"></i>
+                @(Model.Scope == "admin" ? $"Customer Buyers ({Model.HostCompanyName})" : (Model.Scope == "partner" ? "Partner Company Customer Buyers" : "Customer Buyers Directory"))
+            </h2>
+            <div style="font-size: 12.5px; color: #64748b;">
+                List of policyholders and customers that purchased insurance products @(Model.SelectedCompanyName != null ? $"from {Model.SelectedCompanyName}" : (Model.Scope == "admin" ? $"from {Model.HostCompanyName}" : "across active carriers")).
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div style="position: relative;">
+                <i class="bi bi-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #94a3b8;"></i>
+                <input type="text" id="customerBuyerSearch" onkeyup="filterCustomerBuyerTable()" placeholder="Search buyer name, ID, phone..."
+                       style="font-size: 12.5px; padding: 7px 12px 7px 28px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; width: 220px;" />
+            </div>
+            <button type="button" onclick="exportTableToCSV('@(Model.Scope)-buyers-report.csv', 'customerBuyerTable')" class="btn btn-outline btn-sm" style="font-size: 12.5px; font-weight: 600; padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 8px; color: #334155; text-decoration: none; background: #ffffff;">
+                <i class="bi bi-download me-1"></i> Export Buyers CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- Customer Buyers Table -->
+    <div class="table-responsive">
+        <table class="table" id="customerBuyerTable" style="margin-bottom: 0; font-size: 13px; width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #475569; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em;">
+                    <th style="padding: 12px 18px;">Customer Name</th>
+                    <th style="padding: 12px 16px;">National ID / Passport</th>
+                    <th style="padding: 12px 16px;">Contact Phone & Email</th>
+                    <th style="padding: 12px 16px;">Carrier</th>
+                    <th style="padding: 12px 16px;">Product Plan</th>
+                    <th style="padding: 12px 16px; text-align: center;">Policies</th>
+                    <th style="padding: 12px 16px; text-align: right;">Total Amount</th>
+                    <th style="padding: 12px 18px; text-align: center;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.CustomerBuyers.Any())
+                {
+                    @foreach (var cust in Model.CustomerBuyers)
+                    {
+                        <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                            <td style="padding: 14px 18px; font-weight: 600; color: #0f172a;">
+                                <i class="bi bi-person-circle me-1 text-slate-400"></i> @cust.CustomerName
+                            </td>
+                            <td style="padding: 14px 16px; font-family: monospace; color: #475569;">
+                                @(string.IsNullOrWhiteSpace(cust.NationalId) ? "—" : cust.NationalId)
+                            </td>
+                            <td style="padding: 14px 16px;">
+                                <div style="font-weight: 500; color: #334155;">@(cust.Phone ?? "N/A")</div>
+                                <div style="font-size: 11px; color: #64748b;">@(cust.Email ?? "—")</div>
+                            </td>
+                            <td style="padding: 14px 16px; color: #475569;">
+                                @if (cust.CompanyName == Model.HostCompanyName)
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: #2563eb;">
+                                        <i class="bi bi-shield-shaded"></i> @cust.CompanyName
+                                    </span>
+                                }
+                                else
+                                {
+                                    @cust.CompanyName
+                                }
+                            </td>
+                            <td style="padding: 14px 16px; font-weight: 500; color: #1e293b;">
+                                @cust.LatestProductName
+                            </td>
+                            <td style="padding: 14px 16px; text-align: center;">
+                                <span style="display: inline-block; font-size: 12px; font-weight: 600; background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 6px;">
+                                    @cust.PoliciesCount
+                                </span>
+                            </td>
+                            <td style="padding: 14px 16px; text-align: right; font-weight: 700; color: #059669;">
+                                $@cust.TotalSpent.ToString("N2")
+                            </td>
+                            <td style="padding: 14px 18px; text-align: center;">
+                                <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 99px;">
+                                    <span style="width: 5px; height: 5px; border-radius: 50%; background: #10b981;"></span>
+                                    @cust.PolicyStatus
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" style="padding: 30px; text-align: center; color: #94a3b8;">
+                            No customers found for this criteria.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ════ RECENT TRANSACTIONS LEDGER (ACTION BUTTONS OUTSIDE TABLE) ════ -->
+<div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); overflow: hidden; margin-bottom: 24px;">
+    <!-- Toolbar STRICTLY OUTSIDE Table -->
+    <div style="padding: 18px 22px; border-bottom: 1px solid #f1f5f9; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;">
+        <div>
+            <h2 style="font-size: 16px; font-weight: 700; color: #0f172a; margin: 0 0 2px 0;">
+                <i class="bi bi-receipt-cutoff me-2 text-primary"></i>
+                @(Model.Scope == "admin" ? $"Recent Invoices & Transactions ({Model.HostCompanyName})" : (Model.Scope == "partner" ? "Partner Premium Invoices & Transactions" : "Recent Premium Invoices & Transactions"))
+            </h2>
+            <div style="font-size: 12.5px; color: #64748b;">
+                Verified payment ledger recorded across active policies.
+            </div>
+        </div>
+
+        <!-- Action Buttons & Search Filter (Outside Table) -->
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div style="position: relative;">
+                <i class="bi bi-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #94a3b8;"></i>
+                <input type="text" id="transactionSearchInput" onkeyup="filterTransactionTable()" placeholder="Search customer, policy, carrier..."
+                       style="font-size: 12.5px; padding: 7px 12px 7px 28px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; width: 220px;" />
+            </div>
+            <a asp-action="Policies" class="btn btn-outline btn-sm" style="font-size: 12.5px; font-weight: 600; padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 8px; color: #334155; text-decoration: none; background: #ffffff;">
+                <i class="bi bi-shield-check me-1"></i> View All Policies
+            </a>
+        </div>
+    </div>
+
+    <!-- Table Container -->
+    <div class="table-responsive">
+        <table class="table" id="transactionTable" style="margin-bottom: 0; font-size: 13px; width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #475569; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em;">
+                    <th style="padding: 12px 18px;">Policy & Plan</th>
+                    <th style="padding: 12px 16px;">Customer</th>
+                    <th style="padding: 12px 16px;">Carrier</th>
+                    <th style="padding: 12px 16px;">Payment Date</th>
+                    <th style="padding: 12px 16px;">Method</th>
+                    <th style="padding: 12px 16px; text-align: right;">Amount</th>
+                    <th style="padding: 12px 18px; text-align: center;">Status</th>
+                </tr>
+            </thead>
+            <tbody style="divide-y: #f1f5f9;">
+                @if (Model.RecentTransactions.Any())
+                {
+                    @foreach (var txn in Model.RecentTransactions)
+                    {
+                        <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                            <td style="padding: 14px 18px;">
+                                <div style="font-weight: 600; color: #0f172a;">@txn.ProductName</div>
+                                <div style="font-size: 11.5px; color: #64748b; font-family: monospace;">@txn.PolicyNumber</div>
+                            </td>
+                            <td style="padding: 14px 16px; font-weight: 500; color: #334155;">
+                                @txn.CustomerName
+                            </td>
+                            <td style="padding: 14px 16px; color: #475569;">
+                                @if (txn.CompanyName == Model.HostCompanyName)
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: #2563eb;">
+                                        <i class="bi bi-shield-shaded"></i> @txn.CompanyName
+                                    </span>
+                                }
+                                else
+                                {
+                                    @txn.CompanyName
+                                }
+                            </td>
+                            <td style="padding: 14px 16px; color: #64748b;">
+                                @txn.PayDate.ToString("yyyy-MM-dd HH:mm")
+                            </td>
+                            <td style="padding: 14px 16px; color: #475569;">
+                                <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; background: #f1f5f9; padding: 2px 8px; border-radius: 6px;">
+                                    <i class="bi bi-credit-card me-1"></i> @txn.PaymentMethod
+                                </span>
+                            </td>
+                            <td style="padding: 14px 16px; text-align: right; font-weight: 700; color: #0f172a;">
+                                $@txn.Amount.ToString("N2")
+                            </td>
+                            <td style="padding: 14px 18px; text-align: center;">
+                                <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; color: #16a34a; background: #ecfdf5; border: 1px solid #bbf7d0; padding: 2px 8px; border-radius: 99px;">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    @txn.Status
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" style="padding: 40px; text-align: center; color: #94a3b8;">
+                            <i class="bi bi-inbox" style="font-size: 32px; display: block; margin-bottom: 8px;"></i>
+                            No transaction records found for this criteria.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .scope-pill {
+        border: none;
+        background: transparent;
+        padding: 6px 14px;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: #64748b;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .scope-pill:hover {
+        color: #0f172a;
+        background: rgba(255, 255, 255, 0.7);
+    }
+    .scope-pill.active {
+        background: #ffffff;
+        color: #0f172a;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+    .pill-toggle {
+        border: none;
+        background: transparent;
+        padding: 5px 14px;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: #64748b;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .pill-toggle:hover {
+        color: #0f172a;
+    }
+    .pill-toggle.active {
+        background: #2563eb;
+        color: #ffffff;
+        box-shadow: 0 1px 3px rgba(37,99,235,0.3);
+    }
+    @@media print {
+        .page-header-actions, #filterForm, .sidebar, nav, #transactionSearchInput, #customerBuyerSearch, #companyReportSearch {
+            display: none !important;
+        }
+        body {
+            background: #ffffff !important;
+        }
+        .report-kpi-card, .stat-card {
+            border: 1px solid #ccc !important;
+        }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        // Timeframe selector
+        function setTimeframe(tf) {
+            document.getElementById('timeframeInput').value = tf;
+            document.getElementById('filterForm').submit();
+        }
+
+        // Scope selector (Admin Owner vs Partner Companies vs Full Platform)
+        function setScope(sc) {
+            document.getElementById('scopeInput').value = sc;
+            var compFilter = document.getElementById('companyFilter');
+            if (compFilter && sc === 'admin') {
+                compFilter.value = '';
+            }
+            document.getElementById('filterForm').submit();
+        }
+
+        // Live Table Search Filter (Transactions)
+        function filterTransactionTable() {
+            const input = document.getElementById("transactionSearchInput");
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById("transactionTable");
+            if (!table) return;
+            const tr = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < tr.length; i++) {
+                const rowText = tr[i].textContent || tr[i].innerText;
+                tr[i].style.display = rowText.toLowerCase().indexOf(filter) > -1 ? "" : "none";
+            }
+        }
+
+        // Partner Company Search Filter
+        function filterCompanyReportTable() {
+            const input = document.getElementById("companyReportSearch");
+            if (!input) return;
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById("companyReportTable");
+            if (!table) return;
+            const tr = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < tr.length; i++) {
+                const rowText = tr[i].textContent || tr[i].innerText;
+                tr[i].style.display = rowText.toLowerCase().indexOf(filter) > -1 ? "" : "none";
+            }
+        }
+
+        // Customer Buyer Search Filter
+        function filterCustomerBuyerTable() {
+            const input = document.getElementById("customerBuyerSearch");
+            if (!input) return;
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById("customerBuyerTable");
+            if (!table) return;
+            const tr = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < tr.length; i++) {
+                const rowText = tr[i].textContent || tr[i].innerText;
+                tr[i].style.display = rowText.toLowerCase().indexOf(filter) > -1 ? "" : "none";
+            }
+        }
+
+        // Generic CSV Exporter
+        function exportTableToCSV(filename, tableId = "transactionTable") {
+            const table = document.getElementById(tableId);
+            if (!table) return;
+            let csv = [];
+            for (let i = 0; i < table.rows.length; i++) {
+                let row = [], cols = table.rows[i].querySelectorAll("td, th");
+                for (let j = 0; j < cols.length; j++) {
+                    let data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, "").replace(/(\s\s+)/gm, " ");
+                    data = data.replace(/"/g, '""');
+                    row.push('"' + data + '"');
+                }
+                csv.push(row.join(","));
+            }
+            const csvFile = new Blob([csv.join("\n")], { type: "text/csv" });
+            const downloadLink = document.createElement("a");
+            downloadLink.download = filename;
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+            downloadLink.style.display = "none";
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+    </script>
+}
+

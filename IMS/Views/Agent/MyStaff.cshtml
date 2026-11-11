@@ -1,0 +1,184 @@
+@model IEnumerable<IMS.Models.Staff>
+@{
+    ViewData["Title"] = "Agency Staff Members";
+    var company = ViewBag.Company as IMS.Models.Company;
+}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Agency Staff Directory</div>
+        <div class="page-header-sub">Manage operating staff members working under @(company?.name ?? "your carrier agency").</div>
+    </div>
+    <div class="page-header-actions">
+        <a asp-action="AddStaff" class="btn btn-primary btn-md">
+            <i class="bi bi-person-plus-fill"></i> Add Agency Staff
+        </a>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-people me-2 text-primary"></i>Agency Operating Team</div>
+        <span class="badge badge-gray">@Model.Count() staff members</span>
+    </div>
+
+    <!-- Actions Toolbar Outside Table -->
+    <div class="table-actions-toolbar" id="agent-staff-toolbar">
+        <div class="toolbar-label">
+            <span class="badge bg-secondary-subtle text-secondary border py-1.5 px-2" id="agent-staff-badge">
+                <i class="bi bi-info-circle me-1"></i>No staff selected
+            </span>
+            <span class="text-muted small" id="agent-staff-name">Select a staff member from the table to perform actions</span>
+        </div>
+        <div class="toolbar-btns">
+            <a id="agent-staff-btn-edit" href="#" class="btn btn-sm btn-outline disabled" tabindex="-1" aria-disabled="true">
+                <i class="bi bi-pencil-square text-primary me-1"></i>Edit Staff
+            </a>
+            <form id="agent-staff-form-alerts" asp-action="ToggleStaffAlerts" method="post" class="d-inline m-0">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="agent-staff-alerts-id" />
+                <button type="submit" id="agent-staff-btn-alerts" class="btn btn-sm btn-outline" disabled>
+                    <i class="bi bi-bell me-1" id="agent-staff-alerts-icon"></i>
+                    <span id="agent-staff-alerts-text">Toggle Alerts</span>
+                </button>
+            </form>
+            <form id="agent-staff-form-delete" asp-action="DeleteStaff" method="post" class="d-inline m-0" onsubmit="return confirm('Are you sure you want to remove this staff member?');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="agent-staff-delete-id" />
+                <button type="submit" id="agent-staff-btn-delete" class="btn btn-sm btn-ghost-danger" disabled>
+                    <i class="bi bi-trash me-1"></i>Remove
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table align-middle selectable-table mb-0" id="agent-staff-table">
+            <thead>
+                <tr>
+                    <th style="width: 44px;" class="text-center">
+                        <i class="bi bi-check2-circle text-muted"></i>
+                    </th>
+                    <th>Staff Name</th>
+                    <th>Login Username</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Supervising Agent</th>
+                    <th>Alert Notifications</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var s in Model)
+                    {
+                        <tr class="selectable-row" data-id="@s.staffId" data-name="@s.fullName" data-alerts="@(s.receiveAlerts ? "true" : "false")">
+                            <td class="text-center" onclick="event.stopPropagation();">
+                                <input type="radio" name="selectedStaff" class="form-check-input agent-staff-radio"
+                                       data-id="@s.staffId" data-name="@s.fullName" data-alerts="@(s.receiveAlerts ? "true" : "false")" />
+                            </td>
+                            <td>
+                                <div class="cell-primary d-flex align-items-center gap-2">
+                                    <div style="width: 32px; height: 32px; border-radius: 8px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;">
+                                        @(s.fullName.Length > 0 ? s.fullName.Substring(0,1).ToUpper() : "S")
+                                    </div>
+                                    <div class="fw-bold text-dark">@s.fullName</div>
+                                </div>
+                            </td>
+                            <td><code>@(s.UserAccount?.username ?? "N/A")</code></td>
+                            <td>@(s.UserAccount?.email ?? "N/A")</td>
+                            <td>@(s.phone ?? "N/A")</td>
+                            <td>@(s.SupervisingAgent?.fullName ?? "Lead Agent")</td>
+                            <td>
+                                <span class="badge @(s.receiveAlerts ? "badge-success" : "badge-gray")">
+                                    <i class="bi @(s.receiveAlerts ? "bi-bell-fill" : "bi-bell-slash") me-1"></i>
+                                    @(s.receiveAlerts ? "Receiving" : "Disabled")
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge @(s.status == "Active" ? "badge-success" : "badge-danger")">
+                                    @s.status
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <div class="empty-state-icon"><i class="bi bi-person-badge"></i></div>
+                                <div class="empty-state-title">No agency staff members yet</div>
+                                <div class="empty-state-desc">Click "Add Agency Staff" to register team members and delegate quote operations.</div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const table = document.getElementById('agent-staff-table');
+        if (!table) return;
+
+        const editBtn = document.getElementById('agent-staff-btn-edit');
+        const alertsBtn = document.getElementById('agent-staff-btn-alerts');
+        const alertsId = document.getElementById('agent-staff-alerts-id');
+        const alertsText = document.getElementById('agent-staff-alerts-text');
+        const alertsIcon = document.getElementById('agent-staff-alerts-icon');
+        const deleteBtn = document.getElementById('agent-staff-btn-delete');
+        const deleteId = document.getElementById('agent-staff-delete-id');
+        const badge = document.getElementById('agent-staff-badge');
+        const nameLabel = document.getElementById('agent-staff-name');
+
+        function selectStaff(row) {
+            table.querySelectorAll('tbody tr').forEach(r => r.classList.remove('row-selected'));
+            row.classList.add('row-selected');
+            const radio = row.querySelector('.agent-staff-radio');
+            if (radio) radio.checked = true;
+
+            const id = row.getAttribute('data-id');
+            const name = row.getAttribute('data-name');
+            const alerts = row.getAttribute('data-alerts') === 'true';
+
+            badge.className = 'badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-2';
+            badge.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Selected';
+            nameLabel.innerHTML = '<strong>' + name + '</strong>';
+
+            editBtn.classList.remove('disabled');
+            editBtn.removeAttribute('tabindex');
+            editBtn.removeAttribute('aria-disabled');
+            editBtn.href = '@Url.Action("EditStaff", "Agent")?id=' + id;
+
+            alertsBtn.disabled = false;
+            alertsId.value = id;
+            alertsText.textContent = alerts ? 'Disable Alerts' : 'Enable Alerts';
+            alertsIcon.className = alerts ? 'bi bi-bell-slash me-1' : 'bi bi-bell-fill me-1';
+            alertsBtn.className = alerts ? 'btn btn-sm btn-outline' : 'btn btn-sm btn-success';
+
+            deleteBtn.disabled = false;
+            deleteId.value = id;
+        }
+
+        table.querySelectorAll('tbody tr.selectable-row').forEach(row => {
+            row.addEventListener('click', function () {
+                selectStaff(this);
+            });
+        });
+
+        table.querySelectorAll('.agent-staff-radio').forEach(radio => {
+            radio.addEventListener('change', function () {
+                const row = this.closest('tr');
+                if (row) selectStaff(row);
+            });
+        });
+    });
+</script>
+}
+

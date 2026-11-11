@@ -1,8 +1,186 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Enterprise Insurance Ecosystem";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<!-- Hero Section -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5 position-relative" style="background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 60%, #e8f0fe 100%);">
+    <div class="card-body p-4 p-md-5">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8">
+                <!-- Badge -->
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill bg-primary-subtle border border-primary-subtle text-primary fw-semibold small mb-4">
+                    <span class="rounded-circle bg-primary d-inline-block" style="width: 8px; height: 8px;"></span>
+                    Next-Gen Insurance Ecosystem 2026
+                </div>
+
+                <!-- Title -->
+                <h1 class="display-5 fw-extrabold text-dark tracking-tight mb-3">
+                    Smart Insurance Management <br class="d-none d-sm-block" />
+                    <span class="text-primary">Built for Modern Agencies</span>
+                </h1>
+
+                <!-- Description -->
+                <p class="lead text-secondary mb-4 fs-6" style="max-width: 620px;">
+                    A unified digital platform connecting policyholders, certified insurance carriers, and authorized underwriters with automated quote processing, policy issuance, and instant claim notifications.
+                </p>
+
+                <!-- Actions -->
+                <div class="d-flex flex-wrap align-items-center gap-3">
+                    <a asp-controller="Products" asp-action="Index" class="btn btn-primary px-4 py-2.5 fw-semibold shadow-sm">
+                        <i class="bi bi-grid-fill me-1"></i> Explore Insurance Plans
+                    </a>
+
+                    @if (User.Identity == null || !User.Identity.IsAuthenticated)
+                    {
+                        <a asp-controller="Auth" asp-action="Login" class="btn btn-outline-secondary px-4 py-2.5 fw-semibold bg-white">
+                            <i class="bi bi-box-arrow-in-right text-primary me-1"></i> Sign In to Portal
+                        </a>
+                    }
+                    else if (User.IsInRole("Admin"))
+                    {
+                        <a asp-controller="Admin" asp-action="Dashboard" class="btn btn-dark px-4 py-2.5 fw-semibold">
+                            <i class="bi bi-speedometer2 text-warning me-1"></i> Admin Overview
+                        </a>
+                    }
+                    else if (User.IsInRole("Agent") || User.IsInRole("Staff"))
+                    {
+                        <a asp-controller="Agent" asp-action="Dashboard" class="btn btn-success px-4 py-2.5 fw-semibold">
+                            <i class="bi bi-speedometer2 me-1"></i> Agency Overview
+                        </a>
+                    }
+                    else if (User.IsInRole("Customer"))
+                    {
+                        <a asp-controller="Customer" asp-action="Dashboard" class="btn btn-primary px-4 py-2.5 fw-semibold">
+                            <i class="bi bi-speedometer2 me-1"></i> My Overview
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <!-- Right Visual Graphic -->
+            <div class="col-lg-4 d-none d-lg-flex justify-content-center">
+                <div class="position-relative">
+                    <div class="rounded-circle bg-primary-subtle d-flex align-items-center justify-content-center p-4 shadow-sm" style="width: 220px; height: 220px;">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow" style="width: 150px; height: 150px;">
+                            <i class="bi bi-shield-check display-3"></i>
+                        </div>
+                    </div>
+                    <!-- Trust Pill Badge -->
+                    <div class="position-absolute bg-white border rounded-3 p-3 shadow-sm d-flex align-items-center gap-3" style="bottom: -15px; right: -25px;">
+                        <div class="rounded-3 bg-success-subtle text-success d-flex align-items-center justify-content-center fw-bold fs-4" style="width: 42px; height: 42px;">
+                            <i class="bi bi-patch-check-fill"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark small">100% Certified</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">Multi-Carrier Platform</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Highlight Value Props -->
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm rounded-4 p-4 transition-all">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center fs-4 flex-shrink-0" style="width: 52px; height: 52px;">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-dark mb-1">Underwriting Standards</h6>
+                    <p class="text-muted small mb-0">Multi-carrier verified protection plans with accredited rates</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm rounded-4 p-4 transition-all">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-3 bg-success-subtle text-success d-flex align-items-center justify-content-center fs-4 flex-shrink-0" style="width: 52px; height: 52px;">
+                    <i class="bi bi-lightning-charge-fill"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-dark mb-1">Real-Time Alert Engine</h6>
+                    <p class="text-muted small mb-0">Instant quotation processing, automated notices & fast claim feedback</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm rounded-4 p-4 transition-all">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-3 bg-warning-subtle text-warning d-flex align-items-center justify-content-center fs-4 flex-shrink-0" style="width: 52px; height: 52px;">
+                    <i class="bi bi-person-badge-fill"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-dark mb-1">Dedicated Agency Teams</h6>
+                    <p class="text-muted small mb-0">Authorized brokers, certified agents & operational underwriters</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Workflow Section -->
+<div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-5">
+    <div class="text-center mb-5" style="max-width: 580px; margin-left: auto; margin-right: auto;">
+        <span class="text-primary fw-bold text-uppercase small" style="letter-spacing: 0.5px;">How It Works</span>
+        <h3 class="fw-extrabold text-dark mt-1">Streamlined Digital Insurance Journey</h3>
+        <p class="text-muted small mt-2">End-to-end transparent process from plan discovery to claims resolution.</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Step 1 -->
+        <div class="col-md-4">
+            <div class="card h-100 border bg-light rounded-4 p-4 transition-all">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="rounded-3 bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 42px; height: 42px;">
+                        <i class="bi bi-search"></i>
+                    </div>
+                    <span class="fs-2 fw-extrabold text-muted opacity-50">01</span>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">1. Request Quotation</h5>
+                <p class="text-muted small mb-0 leading-relaxed">
+                    Browse policies across Health, Motor, Life, and Property categories. Submit your desired terms with custom coverage estimates in seconds.
+                </p>
+            </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="col-md-4">
+            <div class="card h-100 border bg-light rounded-4 p-4 transition-all">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="rounded-3 bg-warning text-white d-flex align-items-center justify-content-center fw-bold" style="width: 42px; height: 42px;">
+                        <i class="bi bi-check2-circle"></i>
+                    </div>
+                    <span class="fs-2 fw-extrabold text-muted opacity-50">02</span>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">2. Underwriting & Issuance</h5>
+                <p class="text-muted small mb-0 leading-relaxed">
+                    Agency teams receive instant notifications, review applicants' terms, calibrate premiums, and issue active legal coverage contracts.
+                </p>
+            </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="col-md-4">
+            <div class="card h-100 border bg-light rounded-4 p-4 transition-all">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="rounded-3 bg-success text-white d-flex align-items-center justify-content-center fw-bold" style="width: 42px; height: 42px;">
+                        <i class="bi bi-shield-shaded"></i>
+                    </div>
+                    <span class="fs-2 fw-extrabold text-muted opacity-50">03</span>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">3. Claims & Resolution</h5>
+                <p class="text-muted small mb-0 leading-relaxed">
+                    Policyholders file claims effortlessly online, while administrators and agencies track claim reviews and commission balances transparently.
+                </p>
+            </div>
+        </div>
+    </div>
 </div>

@@ -1,0 +1,227 @@
+@model IEnumerable<IMS.Models.Quotation>
+@{
+    ViewData["Title"] = "Incoming Quotations";
+    var selectedStatus = ViewBag.SelectedStatus as string ?? "All";
+    int pendingCount = Model.Count(q => q.status == "Pending");
+    int acceptedCount = Model.Count(q => q.status == "Accepted");
+}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Incoming Quotation Requests</div>
+        <div class="page-header-sub">Review applicant inquiries, approve customized terms, and issue binding insurance policies.</div>
+    </div>
+    <div class="page-header-actions">
+        <div class="btn-group" role="group">
+            <a asp-action="Quotations" asp-route-status="All" class="btn btn-sm @(selectedStatus == "All" ? "btn-primary" : "btn-outline")">All</a>
+            <a asp-action="Quotations" asp-route-status="Pending" class="btn btn-sm @(selectedStatus == "Pending" ? "btn-primary" : "btn-outline")">Pending Review (@pendingCount)</a>
+            <a asp-action="Quotations" asp-route-status="Accepted" class="btn btn-sm @(selectedStatus == "Accepted" ? "btn-primary" : "btn-outline")">Accepted (@acceptedCount)</a>
+            <a asp-action="Quotations" asp-route-status="Rejected" class="btn btn-sm @(selectedStatus == "Rejected" ? "btn-primary" : "btn-outline")">Rejected</a>
+        </div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-chat-left-quote me-2 text-primary"></i>Agency Quote Requests</div>
+        <span class="badge badge-gray">@Model.Count() records</span>
+    </div>
+
+    <!-- Actions Toolbar Outside Table -->
+    <div class="table-actions-toolbar" id="agent-quote-toolbar">
+        <div class="toolbar-label">
+            <span class="badge bg-secondary-subtle text-secondary border py-1.5 px-2" id="agent-quote-badge">
+                <i class="bi bi-info-circle me-1"></i>No quotation selected
+            </span>
+            <span class="text-muted small" id="agent-quote-name">Select a quotation from the table to perform underwriting</span>
+        </div>
+        <div class="toolbar-btns">
+            <form id="agent-quote-form-accept" asp-action="AcceptQuote" method="post" class="d-inline m-0">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="agent-quote-accept-id" />
+                <button type="submit" id="agent-quote-btn-accept" class="btn btn-sm btn-success" disabled>
+                    <i class="bi bi-check-lg me-1"></i>Accept Proposal
+                </button>
+            </form>
+            <form id="agent-quote-form-reject" asp-action="RejectQuote" method="post" class="d-inline m-0" onsubmit="return confirm('Decline this quotation proposal?');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="agent-quote-reject-id" />
+                <button type="submit" id="agent-quote-btn-reject" class="btn btn-sm btn-ghost-danger" disabled>
+                    <i class="bi bi-x-lg me-1"></i>Decline
+                </button>
+            </form>
+            <a id="agent-quote-btn-issue" href="#" class="btn btn-sm btn-primary disabled" tabindex="-1" aria-disabled="true">
+                <i class="bi bi-qr-code-scan me-1"></i>Issue Policy & Pay
+            </a>
+            <span id="agent-quote-policy-badge" class="badge badge-success d-none p-2">
+                <i class="bi bi-check2-all me-1"></i><span id="agent-quote-policy-text">Policy Issued</span>
+            </span>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table align-middle selectable-table mb-0" id="agent-quotations-table">
+            <thead>
+                <tr>
+                    <th style="width: 44px;" class="text-center">
+                        <i class="bi bi-check2-circle text-muted"></i>
+                    </th>
+                    <th>Quote Ref</th>
+                    <th>Applicant Customer</th>
+                    <th>Plan Requested</th>
+                    <th>Applicant Notes</th>
+                    <th>Est. Premium</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var q in Model)
+                    {
+                        var hasPolicy = q.InsurancePolicy != null;
+                        var policyNumber = q.InsurancePolicy?.policyNumber ?? "";
+
+                        <tr class="selectable-row" data-id="@q.quoteId" data-customer="@(q.Customer?.fullName ?? "Applicant")"
+                            data-plan="@(q.InsuranceProduct?.name ?? "Plan")" data-status="@q.status"
+                            data-haspolicy="@(hasPolicy ? "true" : "false")" data-policynumber="@policyNumber">
+                            <td class="text-center" onclick="event.stopPropagation();">
+                                <input type="radio" name="selectedQuote" class="form-check-input agent-quote-radio"
+                                       data-id="@q.quoteId" data-customer="@(q.Customer?.fullName ?? "Applicant")"
+                                       data-plan="@(q.InsuranceProduct?.name ?? "Plan")" data-status="@q.status"
+                                       data-haspolicy="@(hasPolicy ? "true" : "false")" data-policynumber="@policyNumber" />
+                            </td>
+                            <td>
+                                <span class="fw-bold text-dark font-monospace">#@q.quoteId</span>
+                            </td>
+                            <td>
+                                <div class="cell-primary fw-bold text-dark">@q.Customer?.fullName</div>
+                                <div class="cell-sub"><i class="bi bi-telephone me-1"></i>@(q.Customer?.phone ?? "N/A")</div>
+                                <div class="cell-sub">ID: @(q.Customer?.nationalId ?? "N/A")</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark">@q.InsuranceProduct?.name</div>
+                                <div class="cell-sub">Date: @q.requestDate.ToString("MMM dd, yyyy")</div>
+                                @if (q.HandlingAgent != null)
+                                {
+                                    <div class="cell-sub text-primary"><i class="bi bi-person-badge me-1"></i>@q.HandlingAgent.fullName</div>
+                                }
+                            </td>
+                            <td>
+                                <div class="cell-sub text-truncate" style="max-width: 240px;" title="@q.message">
+                                    @(string.IsNullOrWhiteSpace(q.message) ? "No notes provided" : q.message)
+                                </div>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-success fs-6">$@q.estimatedPremium.ToString("N2")</span>
+                            </td>
+                            <td>
+                                @if (q.status == "Accepted")
+                                {
+                                    <span class="badge badge-success"><i class="bi bi-check-circle me-1"></i>Accepted</span>
+                                }
+                                else if (q.status == "Pending")
+                                {
+                                    <span class="badge badge-warning"><i class="bi bi-clock-history me-1"></i>Pending</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-danger"><i class="bi bi-x-circle me-1"></i>@q.status</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <div class="empty-state-icon"><i class="bi bi-chat-left-dots"></i></div>
+                                <div class="empty-state-title">No quotations found</div>
+                                <div class="empty-state-desc">There are currently no quotation submissions under this status.</div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const table = document.getElementById('agent-quotations-table');
+        if (!table) return;
+
+        const btnAccept = document.getElementById('agent-quote-btn-accept');
+        const acceptId = document.getElementById('agent-quote-accept-id');
+        const btnReject = document.getElementById('agent-quote-btn-reject');
+        const rejectId = document.getElementById('agent-quote-reject-id');
+        const btnIssue = document.getElementById('agent-quote-btn-issue');
+        const policyBadge = document.getElementById('agent-quote-policy-badge');
+        const policyText = document.getElementById('agent-quote-policy-text');
+        const badge = document.getElementById('agent-quote-badge');
+        const nameLabel = document.getElementById('agent-quote-name');
+
+        function selectQuote(row) {
+            table.querySelectorAll('tbody tr').forEach(r => r.classList.remove('row-selected'));
+            row.classList.add('row-selected');
+            const radio = row.querySelector('.agent-quote-radio');
+            if (radio) radio.checked = true;
+
+            const id = row.getAttribute('data-id');
+            const customer = row.getAttribute('data-customer');
+            const plan = row.getAttribute('data-plan');
+            const status = row.getAttribute('data-status');
+            const hasPolicy = row.getAttribute('data-haspolicy') === 'true';
+            const policyNumber = row.getAttribute('data-policynumber');
+
+            badge.className = 'badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-2';
+            badge.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Selected';
+            nameLabel.innerHTML = '<strong>Quote #' + id + '</strong> &bull; ' + customer + ' - ' + plan + ' (' + status + ')';
+
+            // Reset buttons
+            btnAccept.disabled = true;
+            btnReject.disabled = true;
+            btnIssue.classList.add('disabled');
+            btnIssue.setAttribute('tabindex', '-1');
+            btnIssue.setAttribute('aria-disabled', 'true');
+            btnIssue.href = '#';
+            policyBadge.classList.add('d-none');
+
+            if (status === 'Pending') {
+                btnAccept.disabled = false;
+                acceptId.value = id;
+                btnReject.disabled = false;
+                rejectId.value = id;
+            } else if (status === 'Accepted') {
+                if (hasPolicy) {
+                    policyBadge.classList.remove('d-none');
+                    policyText.textContent = 'Policy ' + policyNumber;
+                } else {
+                    btnIssue.classList.remove('disabled');
+                    btnIssue.removeAttribute('tabindex');
+                    btnIssue.removeAttribute('aria-disabled');
+                    btnIssue.href = '@Url.Action("IssuePolicy", "Payment")?quoteId=' + id;
+                }
+            }
+        }
+
+        table.querySelectorAll('tbody tr.selectable-row').forEach(row => {
+            row.addEventListener('click', function () {
+                selectQuote(this);
+            });
+        });
+
+        table.querySelectorAll('.agent-quote-radio').forEach(radio => {
+            radio.addEventListener('change', function () {
+                const row = this.closest('tr');
+                if (row) selectQuote(row);
+            });
+        });
+    });
+</script>
+}
+

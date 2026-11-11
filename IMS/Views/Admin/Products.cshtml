@@ -1,0 +1,217 @@
+@model IEnumerable<IMS.Models.InsuranceProduct>
+@{
+    ViewData["Title"] = "Insurance Products Management";
+    int activeCount = Model.Count(p => p.status == "Active");
+}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Insurance Plans & Products Catalog</div>
+        <div class="page-header-sub">Master platform catalog across host platform and accredited partner carriers.</div>
+    </div>
+    <div class="page-header-actions">
+        <a asp-action="CreateProduct" class="btn btn-primary btn-md">
+            <i class="bi bi-plus-circle-fill"></i> Add Insurance Plan
+        </a>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-box-seam me-2 text-primary"></i>Published Insurance Plans</div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge badge-success"><i class="bi bi-check-circle me-1"></i>@activeCount Active</span>
+            <span class="badge badge-gray">@Model.Count() total</span>
+        </div>
+    </div>
+
+    <!-- Actions Toolbar Outside Table -->
+    <div class="table-actions-toolbar" id="prod-toolbar">
+        <div class="toolbar-label">
+            <span class="badge bg-secondary-subtle text-secondary border py-1.5 px-2" id="prod-selected-badge">
+                <i class="bi bi-info-circle me-1"></i>No plan selected
+            </span>
+            <span class="text-muted small" id="prod-selected-name">Select a plan from the table to perform actions</span>
+        </div>
+        <div class="toolbar-btns">
+            <a id="prod-btn-edit" href="#" class="btn btn-sm btn-outline disabled" tabindex="-1" aria-disabled="true">
+                <i class="bi bi-pencil-square text-primary me-1"></i>Edit Plan
+            </a>
+            <form id="prod-form-toggle" asp-action="ToggleProductStatus" method="post" class="d-inline m-0">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="prod-toggle-id" />
+                <button type="submit" id="prod-btn-toggle" class="btn btn-sm btn-outline" disabled>
+                    <i class="bi bi-pause-circle me-1" id="prod-toggle-icon"></i>
+                    <span id="prod-toggle-text">Toggle Status</span>
+                </button>
+            </form>
+            <form id="prod-form-delete" asp-action="DeleteProduct" method="post" class="d-inline m-0" onsubmit="return confirm('Are you sure you want to delete this insurance plan?');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="prod-delete-id" />
+                <button type="submit" id="prod-btn-delete" class="btn btn-sm btn-ghost-danger" disabled>
+                    <i class="bi bi-trash me-1"></i>Delete
+                </button>
+            </form>
+            <span id="prod-partner-badge" class="badge badge-gray d-none">
+                <i class="bi bi-lock-fill text-muted me-1"></i>Partner Managed (Read-Only)
+            </span>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table align-middle selectable-table mb-0" id="products-table">
+            <thead>
+                <tr>
+                    <th style="width: 44px;" class="text-center">
+                        <i class="bi bi-check2-circle text-muted"></i>
+                    </th>
+                    <th>Product / Plan</th>
+                    <th>Category</th>
+                    <th>Carrier / Provider</th>
+                    <th>Base Annual Premium</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var p in Model)
+                    {
+                        var isHost = p.Company?.isHostCompany == true;
+                        <tr class="selectable-row" data-id="@p.inProId" data-name="@p.name" data-status="@p.status" data-ishost="@(isHost ? "true" : "false")">
+                            <td class="text-center" onclick="event.stopPropagation();">
+                                <input type="radio" name="selectedProduct" class="form-check-input prod-radio"
+                                       data-id="@p.inProId" data-name="@p.name" data-status="@p.status" data-ishost="@(isHost ? "true" : "false")" />
+                            </td>
+                            <td>
+                                <div class="cell-primary fw-bold text-dark">@p.name</div>
+                                <div class="cell-sub text-truncate" style="max-width: 320px;" title="@p.detail">
+                                    @(string.IsNullOrWhiteSpace(p.detail) ? "Standard coverage plan" : p.detail)
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-gray">
+                                    <i class="bi bi-tag-fill me-1 text-muted"></i>@(p.InsuranceType?.name ?? "General")
+                                </span>
+                            </td>
+                            <td>
+                                @if (isHost)
+                                {
+                                    <span class="badge badge-primary"><i class="bi bi-shield-check me-1"></i>Host Platform</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-gray"><i class="bi bi-buildings me-1"></i>@(p.Company?.name ?? "Partner")</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="fw-bold text-success fs-6">$@p.basePremium.ToString("N2")</span>
+                                <span class="text-muted small">/ yr</span>
+                            </td>
+                            <td>
+                                <span class="badge @(p.status == "Active" ? "badge-success" : "badge-danger")">
+                                    @p.status
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="empty-state-icon"><i class="bi bi-box-seam"></i></div>
+                                <div class="empty-state-title">No products in catalog</div>
+                                <div class="empty-state-desc">Click "Add Insurance Plan" above to create and publish a new plan.</div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const table = document.getElementById('products-table');
+        if (!table) return;
+
+        const editBtn = document.getElementById('prod-btn-edit');
+        const toggleBtn = document.getElementById('prod-btn-toggle');
+        const toggleId = document.getElementById('prod-toggle-id');
+        const toggleText = document.getElementById('prod-toggle-text');
+        const toggleIcon = document.getElementById('prod-toggle-icon');
+        const deleteBtn = document.getElementById('prod-btn-delete');
+        const deleteId = document.getElementById('prod-delete-id');
+        const partnerBadge = document.getElementById('prod-partner-badge');
+        const badge = document.getElementById('prod-selected-badge');
+        const nameLabel = document.getElementById('prod-selected-name');
+
+        function selectProduct(row) {
+            table.querySelectorAll('tbody tr').forEach(r => r.classList.remove('row-selected'));
+            row.classList.add('row-selected');
+            const radio = row.querySelector('.prod-radio');
+            if (radio) radio.checked = true;
+
+            const id = row.getAttribute('data-id');
+            const name = row.getAttribute('data-name');
+            const status = row.getAttribute('data-status');
+            const isHost = row.getAttribute('data-ishost') === 'true';
+
+            badge.className = 'badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-2';
+            badge.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Selected';
+            nameLabel.innerHTML = '<strong>' + name + '</strong> (' + status + ')';
+
+            if (isHost) {
+                partnerBadge.classList.add('d-none');
+
+                editBtn.classList.remove('disabled');
+                editBtn.removeAttribute('tabindex');
+                editBtn.removeAttribute('aria-disabled');
+                editBtn.href = '@Url.Action("EditProduct", "Admin")?id=' + id;
+
+                toggleBtn.disabled = false;
+                toggleId.value = id;
+                if (status === 'Active') {
+                    toggleText.textContent = 'Pause';
+                    toggleIcon.className = 'bi bi-pause-circle me-1';
+                    toggleBtn.className = 'btn btn-sm btn-outline';
+                } else {
+                    toggleText.textContent = 'Activate';
+                    toggleIcon.className = 'bi bi-play-circle me-1';
+                    toggleBtn.className = 'btn btn-sm btn-success';
+                }
+
+                deleteBtn.disabled = false;
+                deleteId.value = id;
+            } else {
+                editBtn.classList.add('disabled');
+                editBtn.setAttribute('tabindex', '-1');
+                editBtn.setAttribute('aria-disabled', 'true');
+                editBtn.href = '#';
+
+                toggleBtn.disabled = true;
+                deleteBtn.disabled = true;
+                partnerBadge.classList.remove('d-none');
+            }
+        }
+
+        table.querySelectorAll('tbody tr.selectable-row').forEach(row => {
+            row.addEventListener('click', function () {
+                selectProduct(this);
+            });
+        });
+
+        table.querySelectorAll('.prod-radio').forEach(radio => {
+            radio.addEventListener('change', function () {
+                const row = this.closest('tr');
+                if (row) selectProduct(row);
+            });
+        });
+    });
+</script>
+}
+

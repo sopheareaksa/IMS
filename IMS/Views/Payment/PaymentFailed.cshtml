@@ -1,0 +1,68 @@
+@model IMS.ViewModels.PaymentResultViewModel
+@{
+    ViewData["Title"] = "Payment Failed - Policy Not Issued";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden text-center mb-4">
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-danger-subtle text-danger rounded-circle mb-3" style="width: 76px; height: 76px;">
+                        <i class="bi bi-x-circle fs-1"></i>
+                    </div>
+                    <h3 class="fw-extrabold text-danger mb-2">Payment Incomplete or Failed</h3>
+                    <p class="text-muted mb-4">
+                        @(string.IsNullOrEmpty(Model.ErrorMessage) 
+                            ? "We could not verify payment for your insurance policy. The policy remains inactive." 
+                            : Model.ErrorMessage)
+                    </p>
+
+                    <div class="p-3 bg-light rounded-3 text-start mb-4 border">
+                        <div class="row g-2 small">
+                            <div class="col-sm-6">
+                                <span class="text-muted d-block">Quotation Reference:</span>
+                                <strong>#@Model.QuoteId</strong>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted d-block">Intended Plan:</span>
+                                <strong>@Model.ProductName</strong>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted d-block">Payable Premium:</span>
+                                <strong class="text-danger">$@Model.PremiumAmount.ToString("N2") @Model.Currency</strong>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted d-block">Policy Status:</span>
+                                <span class="badge bg-danger-subtle text-danger">Unpaid / Inactive</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(Model.Md5))
+                            {
+                                <div class="col-12">
+                                    <span class="text-muted d-block">KHQR Transaction MD5:</span>
+                                    <code class="text-secondary small">@Model.Md5</code>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info py-2 px-3 small text-start d-flex align-items-center gap-2 mb-4">
+                        <i class="bi bi-info-circle fs-5"></i>
+                        <span>
+                            Need help? Ensure your mobile banking app is linked to Bakong and has sufficient funds. You can retry payment at any time.
+                        </span>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 justify-content-center">
+                        <a asp-action="IssuePolicy" asp-route-quoteId="@Model.QuoteId" class="btn btn-primary px-4 py-2 fw-semibold">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Retry Payment (Generate New KHQR)
+                        </a>
+                        <a asp-controller="Customer" asp-action="MyQuotations" class="btn btn-outline-secondary px-4 py-2">
+                            <i class="bi bi-chat-left-quote me-1"></i> Back to Quotations
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

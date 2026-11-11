@@ -1,0 +1,321 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    var customer = ViewBag.Customer as IMS.Models.Customer;
+    var quotes = ViewBag.Quotations as List<IMS.Models.Quotation> ?? new();
+    var policies = ViewBag.Policies as List<IMS.Models.InsurancePolicy> ?? new();
+    var claims = ViewBag.Claims as List<IMS.Models.Claim> ?? new();
+
+    var now = DateTime.Now;
+    string greeting = now.Hour < 12 ? "Good morning" : now.Hour < 17 ? "Good afternoon" : "Good evening";
+    string fullName = customer?.fullName ?? "Policyholder";
+    string firstName = fullName.Contains(' ') ? fullName[..fullName.IndexOf(' ')] : fullName;
+
+    int activePoliciesCount = policies.Count(p => p.status == "Active");
+    int openQuotesCount = quotes.Count(q => q.status != "Accepted" && q.status != "Approved" && q.status != "Declined");
+    int inProgressClaims = claims.Count(c => c.status == "Submitted" || c.status == "In Review");
+
+    var nextRenewal = policies
+        .Where(p => p.status == "Active")
+        .Select(p => (DateTime?)p.endDate)
+        .OrderBy(d => d)
+        .FirstOrDefault();
+}
+
+<style>
+    /* Tailwind's preflight is disabled app-wide so Bootstrap keeps its base styles,
+       which means anchors here still inherit their underline. Reset inside the portal
+       cards only; the utilities' own hover:underline stays more specific and wins. */
+    .portal-card a { text-decoration: none; }
+</style>
+
+<div class="portal-card space-y-5">
+
+    <!-- ════ ACCOUNT STATUS ════ -->
+    <div>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+            Personal Policyholder Account &bull; Protected
+        </span>
+    </div>
+
+    <!-- ════ GREETING + PRIMARY ACTIONS ════ -->
+    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">@greeting, @firstName</h2>
+            <p class="text-gray-500 mt-1">Manage your active insurance policies, track quotation requests, and monitor claims.</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            <a asp-controller="Products" asp-action="Index"
+               class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                Explore Plans
+            </a>
+            <a asp-action="MyQuotations"
+               class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                My Quotations
+            </a>
+            @if (activePoliciesCount > 0)
+            {
+                <a asp-action="SubmitClaim"
+                   class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition inline-flex items-center gap-2">
+                    <i data-lucide="file-warning" class="w-4 h-4"></i>
+                    File a Claim
+                </a>
+            }
+            else
+            {
+                <a asp-controller="Products" asp-action="Index"
+                   class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition inline-flex items-center gap-2">
+                    <i data-lucide="shield" class="w-4 h-4"></i>
+                    Get Protected Today
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- ════ KPI CARDS ════ -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <div class="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center mb-3">
+                <i data-lucide="shield-check" class="w-5 h-5 text-green-600"></i>
+            </div>
+            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Active Policies</p>
+            <p class="text-3xl font-bold text-gray-900 mt-1">@activePoliciesCount</p>
+            <a asp-action="MyPolicies" class="text-sm text-blue-600 hover:underline mt-2 inline-block">View policy details &rarr;</a>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center mb-3">
+                <i data-lucide="file-text" class="w-5 h-5 text-amber-600"></i>
+            </div>
+            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Quote Requests</p>
+            <p class="text-3xl font-bold text-gray-900 mt-1">@quotes.Count</p>
+            <a asp-action="MyQuotations" class="text-sm text-blue-600 hover:underline mt-2 inline-block">
+                @openQuotesCount awaiting an agency reply &rarr;
+            </a>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center mb-3">
+                <i data-lucide="alert-circle" class="w-5 h-5 text-red-600"></i>
+            </div>
+            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Claims Filed</p>
+            <p class="text-3xl font-bold text-gray-900 mt-1">@claims.Count</p>
+            @if (claims.Count > 0)
+            {
+                <a asp-action="SubmitClaim" class="text-sm text-red-600 hover:underline mt-2 inline-block">@inProgressClaims claim(s) in progress</a>
+            }
+            else
+            {
+                <a asp-action="MyPolicies" class="text-sm text-gray-500 mt-2 inline-block">No claims on file</a>
+            }
+        </div>
+    </div>
+
+    <!-- ════ POLICIES + QUOTATIONS ════ -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+        <!-- My Active Policies -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="font-semibold text-gray-900 inline-flex items-center gap-2">
+                    <i data-lucide="shield" class="w-5 h-5 text-blue-600"></i>
+                    My Active Policies
+                </h3>
+                <a asp-action="MyPolicies" class="text-sm text-blue-600 hover:underline">View All &rarr;</a>
+            </div>
+
+            @if (policies.Any())
+            {
+                <div class="space-y-3">
+                    @foreach (var pol in policies.Take(3))
+                    {
+                        <div class="flex items-center justify-between gap-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-gray-900 truncate">
+                                    @(pol.Quotation?.InsuranceProduct?.name ?? "Insurance Plan")
+                                </p>
+                                <p class="text-xs text-gray-500 mt-1 truncate">
+                                    <span class="font-mono bg-gray-200 px-1.5 py-0.5 rounded text-[11px] text-gray-700">@pol.policyNumber</span>
+                                    &bull; @(pol.Quotation?.InsuranceProduct?.Company?.name ?? "Carrier")
+                                </p>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    Covers $@pol.coverageAmount.ToString("N0") &bull; expires @pol.endDate.ToString("dd MMM yyyy")
+                                </p>
+                            </div>
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 @(pol.status == "Active" ? "bg-green-50 text-green-700 border border-green-200" : "bg-gray-100 text-gray-600 border border-gray-200")">
+                                @pol.status
+                            </span>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="flex flex-col items-center justify-center py-10 text-center">
+                    <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                        <i data-lucide="package" class="w-8 h-8 text-gray-400"></i>
+                    </div>
+                    <p class="font-medium text-gray-900">No active policies yet</p>
+                    <p class="text-sm text-gray-500 mt-1 max-w-xs">Pick a plan and request a quote &mdash; an approved agency issues your policy within minutes.</p>
+                    <a asp-controller="Products" asp-action="Index"
+                       class="mt-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition inline-flex items-center gap-2">
+                        <i data-lucide="search" class="w-4 h-4"></i>
+                        Browse Insurance Plans
+                    </a>
+                </div>
+            }
+        </div>
+
+        <!-- Recent Quotation Requests -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="font-semibold text-gray-900 inline-flex items-center gap-2">
+                    <i data-lucide="file-text" class="w-5 h-5 text-amber-600"></i>
+                    Recent Quotation Requests
+                </h3>
+                <a asp-action="MyQuotations" class="text-sm text-blue-600 hover:underline">View All &rarr;</a>
+            </div>
+
+            @if (quotes.Any())
+            {
+                <div class="space-y-3">
+                    @foreach (var q in quotes.Take(3))
+                    {
+                        <div class="flex items-center justify-between gap-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-gray-900 truncate">
+                                    @(q.InsuranceProduct?.name ?? "Insurance Plan")
+                                </p>
+                                <p class="text-xs text-gray-500 mt-1 truncate">
+                                    Estimate <strong class="text-green-700">$@q.estimatedPremium.ToString("N2")</strong>
+                                    &bull; @(q.InsuranceProduct?.Company?.name ?? "Carrier")
+                                </p>
+                                <p class="text-xs text-gray-400 mt-1">Requested @q.requestDate.ToString("dd MMM yyyy")</p>
+                            </div>
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0
+                                @(q.status == "Accepted" || q.status == "Approved" ? "bg-green-50 text-green-700 border border-green-200"
+                                  : q.status == "Declined" ? "bg-red-50 text-red-700 border border-red-200"
+                                  : "bg-amber-50 text-amber-700 border border-amber-200")">
+                                @q.status
+                            </span>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="flex flex-col items-center justify-center py-10 text-center">
+                    <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                        <i data-lucide="package" class="w-8 h-8 text-gray-400"></i>
+                    </div>
+                    <p class="font-medium text-gray-900">No quotation requests yet</p>
+                    <p class="text-sm text-gray-500 mt-1 max-w-xs">Send a request and a licensed agency replies with a premium tailored to you.</p>
+                    <a asp-controller="Products" asp-action="Index"
+                       class="mt-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                        Request an Instant Quote
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ════ GUIDANCE + QUICK NAV ════ -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+        <!-- Policyholder Guidance -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h3 class="font-semibold text-gray-900 mb-4">Policyholder Guidance</h3>
+            <div class="space-y-4">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-green-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Coverage Verification</p>
+                        <p class="text-sm text-gray-500">You have @activePoliciesCount active policy(ies) protecting your assets.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="file-check" class="w-4 h-4 text-amber-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Quote Approvals</p>
+                        <p class="text-sm text-gray-500">Accepted quotes activate instantly via digital payment and QR verification.</p>
+                    </div>
+                </div>
+                @if (nextRenewal.HasValue)
+                {
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="calendar-clock" class="w-4 h-4 text-blue-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">Next Renewal</p>
+                            <p class="text-sm text-gray-500">Your earliest cover expires on @nextRenewal.Value.ToString("dd MMM yyyy") &mdash; renew before then to avoid a gap.</p>
+                        </div>
+                    </div>
+                }
+                @if (inProgressClaims > 0)
+                {
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="file-warning" class="w-4 h-4 text-red-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">Open Claims</p>
+                            <p class="text-sm text-gray-500">@inProgressClaims claim(s) are with the adjudicating agency right now.</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Quick Navigation -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h3 class="font-semibold text-gray-900 mb-4 inline-flex items-center gap-2">
+                <i data-lucide="layout-grid" class="w-5 h-5 text-blue-600"></i>
+                Quick Navigation
+            </h3>
+            <div class="grid grid-cols-4 gap-3">
+                <a asp-action="MyPolicies" class="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-gray-50 transition">
+                    <div class="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
+                        <i data-lucide="shield" class="w-6 h-6 text-green-600"></i>
+                    </div>
+                    <span class="text-xs font-medium text-gray-700">Policies</span>
+                </a>
+                <a asp-action="MyQuotations" class="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-gray-50 transition">
+                    <div class="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center">
+                        <i data-lucide="file-text" class="w-6 h-6 text-amber-600"></i>
+                    </div>
+                    <span class="text-xs font-medium text-gray-700">Quotes</span>
+                </a>
+                <a asp-action="MyPayments" class="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-gray-50 transition">
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
+                        <i data-lucide="receipt" class="w-6 h-6 text-blue-600"></i>
+                    </div>
+                    <span class="text-xs font-medium text-gray-700">Payments</span>
+                </a>
+                <a asp-action="Profile" class="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-gray-50 transition">
+                    <div class="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center">
+                        <i data-lucide="user" class="w-6 h-6 text-purple-600"></i>
+                    </div>
+                    <span class="text-xs font-medium text-gray-700">Profile</span>
+                </a>
+            </div>
+
+            <div class="mt-5 pt-5 border-t border-gray-100 grid grid-cols-2 gap-3">
+                <a asp-controller="Products" asp-action="Index"
+                   class="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                    <i data-lucide="grid-2x2" class="w-4 h-4 text-blue-600"></i>
+                    Browse Plans
+                </a>
+                <a asp-action="SubmitClaim"
+                   class="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                    <i data-lucide="file-warning" class="w-4 h-4 text-red-600"></i>
+                    File a Claim
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,920 @@
+@model dynamic
+@{
+    Layout = null;
+    ViewData["Title"] = "Welcome to InsureHub";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f3f5fa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow-x: hidden;
+            color: #1e293b;
+            padding: 24px 16px;
+        }
+
+        /* Ambient blurred background glows */
+        .ambient-glow-tr {
+            position: fixed;
+            top: -10%;
+            right: -5%;
+            width: 540px;
+            height: 540px;
+            background: radial-gradient(circle, rgba(196, 181, 253, 0.45) 0%, rgba(221, 214, 254, 0.12) 50%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .ambient-glow-bl {
+            position: fixed;
+            bottom: -15%;
+            left: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(191, 219, 254, 0.45) 0%, rgba(147, 197, 253, 0.12) 50%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(90px);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Center Auth Card */
+        .auth-card-wrapper {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 1040px;
+            margin: auto;
+            transition: max-width 0.3s ease;
+        }
+
+        .auth-card {
+            background: #ffffff;
+            border-radius: 36px;
+            box-shadow: 0 25px 70px -15px rgba(45, 55, 115, 0.1), 0 10px 25px -8px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            display: grid;
+            grid-template-columns: 1fr;
+            padding: 16px;
+            gap: 16px;
+            overflow: hidden;
+        }
+
+        @@media (min-width: 960px) {
+            .auth-card {
+                grid-template-columns: 42% 58%;
+                gap: 0;
+            }
+        }
+
+        /* LEFT SIDE: Simple Figma-Friendly Blue Insurance Hero Banner */
+        .auth-hero-panel {
+            background: linear-gradient(155deg, #4361ee 0%, #3f37c9 50%, #3a0ca3 100%);
+            border-radius: 28px;
+            padding: 42px 36px 32px;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            min-height: 480px;
+        }
+
+        .hero-title {
+            font-size: 32px;
+            font-weight: 800;
+            line-height: 1.22;
+            letter-spacing: -0.025em;
+            color: #ffffff;
+            margin-bottom: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .hero-subtitle {
+            font-size: 13.5px;
+            line-height: 1.55;
+            color: rgba(255, 255, 255, 0.85);
+            max-width: 340px;
+            font-weight: 400;
+            transition: all 0.3s ease;
+        }
+
+        /* Simplified Figma-Friendly Insurance Illustration */
+        .hero-illustration-wrapper {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            margin-top: 36px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .hero-illustration-wrapper svg {
+            width: 100%;
+            max-width: 290px;
+            height: auto;
+        }
+
+        /* RIGHT SIDE: Auth Form */
+        .auth-form-panel {
+            padding: 36px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        @@media (max-width: 959px) {
+            .auth-form-panel {
+                padding: 24px 16px;
+            }
+        }
+
+        /* Brand Logo */
+        .auth-brand-area {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .brand-logo-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-logo-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 19px;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.35);
+        }
+
+        .brand-name {
+            font-size: 21px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-name span {
+            color: #4361ee;
+        }
+
+        /* ============================================================== */
+        /* PILL SEGMENTED TOGGLES                                         */
+        /* ============================================================== */
+        .auth-top-pill-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 22px;
+        }
+
+        .auth-top-pill {
+            display: inline-flex;
+            align-items: center;
+            background: #f1f5f9;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 9999px;
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .auth-pill-btn {
+            border: none;
+            background: transparent;
+            color: #64748b;
+            font-size: 13.5px;
+            font-weight: 600;
+            padding: 8px 24px;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            outline: none;
+        }
+
+        .auth-pill-btn.active {
+            background: #4361ee;
+            color: #ffffff;
+            font-weight: 700;
+            box-shadow: 0 4px 14px rgba(67, 97, 238, 0.35);
+        }
+
+        .auth-pill-btn:hover:not(.active) {
+            color: #0f172a;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        /* 2-Button Choice Switcher: Customer vs Partner Company */
+        .account-type-pill-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .account-type-pill {
+            display: inline-flex;
+            align-items: center;
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 9999px;
+            padding: 4px;
+            gap: 4px;
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .type-pill-btn {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 9px 18px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.22s ease;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .type-pill-btn.active {
+            background: #0f172a;
+            color: #ffffff;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
+        }
+
+        .type-pill-btn:hover:not(.active) {
+            color: #0f172a;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Headings */
+        .auth-heading {
+            font-size: 26px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.025em;
+            margin-bottom: 4px;
+        }
+
+        .auth-subheading {
+            font-size: 13.5px;
+            color: #64748b;
+            margin-bottom: 22px;
+            font-weight: 400;
+        }
+
+        /* Form Inputs */
+        .auth-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 14px;
+        }
+
+        .grid-full {
+            grid-column: 1 / -1;
+        }
+
+        @@media (max-width: 600px) {
+            .auth-form-grid {
+                grid-template-columns: 1fr;
+            }
+            .grid-full {
+                grid-column: 1;
+            }
+        }
+
+        .auth-input-group {
+            margin-bottom: 14px;
+            position: relative;
+        }
+
+        .auth-label {
+            display: block;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 5px;
+        }
+
+        .auth-label .req {
+            color: #ef4444;
+        }
+
+        .auth-input {
+            width: 100%;
+            height: 48px;
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 13px;
+            padding: 0 16px;
+            font-size: 13.5px;
+            color: #0f172a;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .auth-input::placeholder {
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+        .auth-input:focus {
+            background: #ffffff;
+            border-color: #4361ee;
+            box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.12);
+        }
+
+        .password-field-wrapper {
+            position: relative;
+        }
+
+        .password-toggle-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 6px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .password-toggle-btn:hover {
+            color: #4361ee;
+        }
+
+        .auth-forgot-box {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 6px;
+        }
+
+        .auth-forgot-link {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #64748b;
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+
+        .auth-forgot-link:hover {
+            color: #4361ee;
+        }
+
+        /* Buttons */
+        .auth-btn-primary {
+            width: 100%;
+            height: 48px;
+            background: #4361ee;
+            color: #ffffff;
+            border: none;
+            border-radius: 13px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 24px -4px rgba(67, 97, 238, 0.4);
+            transition: all 0.2s ease;
+            margin-top: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .auth-btn-primary:hover {
+            background: #3651d4;
+            transform: translateY(-1px);
+            box-shadow: 0 12px 28px -4px rgba(67, 97, 238, 0.5);
+        }
+
+        .auth-btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .auth-bottom-text {
+            text-align: center;
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 20px;
+        }
+
+        .auth-bottom-text a {
+            color: #4361ee;
+            font-weight: 700;
+            text-decoration: none;
+            margin-left: 4px;
+            cursor: pointer;
+        }
+
+        .auth-bottom-text a:hover {
+            text-decoration: underline;
+        }
+
+        .alert-box {
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-box.danger {
+            background: #fff1f2;
+            border: 1px solid #fecdd3;
+            color: #be123c;
+        }
+
+        .alert-box.success {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #047857;
+        }
+
+        .compliance-note {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 12px;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .compliance-note i {
+            font-size: 17px;
+            color: #4361ee;
+            flex-shrink: 0;
+        }
+
+        /* Tab Display Helpers */
+        .tab-content {
+            display: none;
+            animation: fadeInTab 0.25s ease-in-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @@keyframes fadeInTab {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ambient Background Glows -->
+    <div class="ambient-glow-tr"></div>
+    <div class="ambient-glow-bl"></div>
+
+    <div class="auth-card-wrapper">
+        <div class="auth-card">
+
+            <!-- ============================================================== -->
+            <!-- LEFT PANEL: SIMPLE, FIGMA-FRIENDLY INSURANCE HERO              -->
+            <!-- ============================================================== -->
+            <div class="auth-hero-panel">
+                <div class="hero-text-content">
+                    <h1 class="hero-title" id="heroTitle">
+                        Simplify<br />
+                        protection with<br />
+                        our insurance
+                    </h1>
+                    <p class="hero-subtitle" id="heroSubtitle">
+                        Manage your policies, track incident claims, and get instant quote approvals with our user friendly insurance platform.
+                    </p>
+                </div>
+
+                <!-- Clean, Simple, Figma-Friendly Vector Insurance Graphic -->
+                <div class="hero-illustration-wrapper">
+                    <svg viewBox="0 0 280 230" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="140" cy="115" r="85" fill="#ffffff" fill-opacity="0.1" />
+                        <path d="M140 28C178 28 208 40 212 80C212 132 172 170 140 192C108 170 68 132 68 80C72 40 102 28 140 28Z"
+                              fill="url(#shieldGradSimple)"
+                              stroke="#ffffff"
+                              stroke-width="2.5"
+                              stroke-opacity="0.35" />
+                        <path d="M140 68C122 68 107 82 107 98H173C173 82 158 68 140 68Z" fill="#ffffff" />
+                        <path d="M140 62V68" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
+                        <path d="M140 98V122C140 126 136 129 133 129C130 129 127 126 127 123" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
+
+                        <g transform="translate(156, 42)">
+                            <rect width="108" height="32" rx="16" fill="#ffffff" fill-opacity="0.2" stroke="#ffffff" stroke-opacity="0.4" stroke-width="1.2" />
+                            <circle cx="16" cy="16" r="8" fill="#10b981" />
+                            <path d="M13 16L15 18L19 14" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                            <text x="30" y="20" fill="#ffffff" font-size="10.5" font-weight="700" font-family="'Plus Jakarta Sans', sans-serif">100% Safe</text>
+                        </g>
+
+                        <g transform="translate(16, 148)">
+                            <rect width="114" height="32" rx="16" fill="#ffffff" fill-opacity="0.2" stroke="#ffffff" stroke-opacity="0.4" stroke-width="1.2" />
+                            <circle cx="16" cy="16" r="8" fill="#fbbf24" />
+                            <path d="M16 11L14 16H18L16 21L20 15H16L18 11Z" fill="#ffffff" />
+                            <text x="30" y="20" fill="#ffffff" font-size="10.5" font-weight="700" font-family="'Plus Jakarta Sans', sans-serif">Fast Claims</text>
+                        </g>
+
+                        <defs>
+                            <linearGradient id="shieldGradSimple" x1="68" y1="28" x2="212" y2="192" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#60a5fa" />
+                                <stop offset="1" stop-color="#2563eb" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- ============================================================== -->
+            <!-- RIGHT PANEL: AUTH FORMS WITH PILL SEGMENTED SWITCHER           -->
+            <!-- ============================================================== -->
+            <div class="auth-form-panel">
+                
+                <!-- Brand Area -->
+                <div class="auth-brand-area">
+                    <div class="brand-logo-group">
+                        <div class="brand-logo-icon">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <div class="brand-name">
+                            Insure<span>Hub</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TOP PILL SEGMENTED TOGGLE (Matches user's Figma design) -->
+                <div class="auth-top-pill-wrapper">
+                    <div class="auth-top-pill">
+                        <button type="button" class="auth-pill-btn active" id="pillTabLogin" onclick="switchMainTab('login')">
+                            Log In
+                        </button>
+                        <button type="button" class="auth-pill-btn" id="pillTabRegister" onclick="switchMainTab('register')">
+                            Register
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Flash Alert Messages -->
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert-box danger">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        <span>@TempData["ErrorMessage"]</span>
+                    </div>
+                }
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert-box success">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>@TempData["SuccessMessage"]</span>
+                    </div>
+                }
+
+                <!-- ========================================================== -->
+                <!-- 1. LOGIN TAB VIEW                                          -->
+                <!-- ========================================================== -->
+                <div id="loginView" class="tab-content active">
+                    <h2 class="auth-heading">Welcome Back</h2>
+                    <p class="auth-subheading">Please Login to your account</p>
+
+                    <form asp-controller="Auth" asp-action="Login" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="auth-input-group">
+                            <input type="text" id="loginEmail" name="email" class="auth-input" placeholder="Email or Username" required autocomplete="username" />
+                        </div>
+
+                        <div class="auth-input-group">
+                            <div class="password-field-wrapper">
+                                <input type="password" id="loginPassword" name="password" class="auth-input" placeholder="Password" required autocomplete="current-password" />
+                                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('loginPassword', this)" title="Toggle password visibility">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <div class="auth-forgot-box">
+                                <a asp-action="ForgotPassword" class="auth-forgot-link">Forgot Password?</a>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="auth-btn-primary">
+                            <span>Login</span>
+                        </button>
+
+                        <div class="auth-bottom-text">
+                            <span>Don't have an account?</span>
+                            <a href="javascript:void(0)" onclick="switchMainTab('register')">Create one now</a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ========================================================== -->
+                <!-- 2. REGISTER TAB VIEW (WITH 2-BUTTON CHOICE SWITCHER)        -->
+                <!-- ========================================================== -->
+                <div id="registerView" class="tab-content">
+                    <h2 class="auth-heading" id="regMainHeading">Create Account</h2>
+                    <p class="auth-subheading" id="regMainSubheading">Select account type to begin</p>
+
+                    <!-- 2 BUTTONS: CUSTOMER or PARTNER COMPANY (Pill Shaped) -->
+                    <div class="account-type-pill-wrapper">
+                        <div class="account-type-pill">
+                            <button type="button" class="type-pill-btn active" id="typeBtnCustomer" onclick="switchRegisterType('customer')">
+                                <i class="bi bi-person-fill"></i>
+                                <span>Customer</span>
+                            </button>
+                            <button type="button" class="type-pill-btn" id="typeBtnCompany" onclick="switchRegisterType('company')">
+                                <i class="bi bi-buildings-fill"></i>
+                                <span>Partner Company</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- FORM A: CUSTOMER REGISTRATION -->
+                    <div id="customerFormPane" class="tab-content active">
+                        <form asp-controller="Auth" asp-action="RegisterCustomer" method="post">
+                            @Html.AntiForgeryToken()
+
+                            <div class="auth-form-grid">
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Username <span class="req">*</span></label>
+                                    <input name="Username" class="auth-input" placeholder="e.g. john_doe" required />
+                                </div>
+
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Email Address <span class="req">*</span></label>
+                                    <input name="Email" type="email" class="auth-input" placeholder="name@example.com" required />
+                                </div>
+
+                                <div class="auth-input-group grid-full">
+                                    <label class="auth-label">Password <span class="req">*</span></label>
+                                    <div class="password-field-wrapper">
+                                        <input name="Password" type="password" id="regCustPass" class="auth-input" placeholder="Minimum 6 characters" required minlength="6" />
+                                        <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('regCustPass', this)" title="Toggle visibility">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Full Legal Name <span class="req">*</span></label>
+                                    <input name="FullName" class="auth-input" placeholder="John Doe" required />
+                                </div>
+
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Phone Number <span class="req">*</span></label>
+                                    <input name="Phone" class="auth-input" placeholder="+1 234 567 8900" required />
+                                </div>
+
+                                <div class="auth-input-group grid-full">
+                                    <label class="auth-label">Residential Address</label>
+                                    <input name="Address" class="auth-input" placeholder="123 Street Name, City, State" />
+                                </div>
+
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Date of Birth</label>
+                                    <input name="DateOfBirth" type="date" class="auth-input" />
+                                </div>
+
+                                <div class="auth-input-group">
+                                    <label class="auth-label">National ID / Passport</label>
+                                    <input name="NationalId" class="auth-input" placeholder="ID-987654321" />
+                                </div>
+                            </div>
+
+                            <button type="submit" class="auth-btn-primary">
+                                <i class="bi bi-person-check-fill"></i>
+                                <span>Create Customer Account</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- FORM B: PARTNER COMPANY REGISTRATION -->
+                    <div id="companyFormPane" class="tab-content">
+                        <form asp-controller="Auth" asp-action="RegisterSeller" method="post">
+                            @Html.AntiForgeryToken()
+
+                            <div class="auth-form-grid">
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Agency Username <span class="req">*</span></label>
+                                    <input name="Username" class="auth-input" placeholder="e.g. apex_agency" required />
+                                </div>
+
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Lead Admin Email <span class="req">*</span></label>
+                                    <input name="Email" type="email" class="auth-input" placeholder="admin@agency.com" required />
+                                </div>
+
+                                <div class="auth-input-group grid-full">
+                                    <label class="auth-label">Password <span class="req">*</span></label>
+                                    <div class="password-field-wrapper">
+                                        <input name="Password" type="password" id="regSellPass" class="auth-input" placeholder="Minimum 6 characters" required minlength="6" />
+                                        <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('regSellPass', this)" title="Toggle visibility">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="auth-input-group grid-full">
+                                    <label class="auth-label">Company Legal Name <span class="req">*</span></label>
+                                    <input name="CompanyName" class="auth-input" placeholder="e.g. Apex Underwriting & Insurance Co." required />
+                                </div>
+
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Business Email <span class="req">*</span></label>
+                                    <input name="CompanyEmail" type="email" class="auth-input" placeholder="info@agency.com" required />
+                                </div>
+
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Business Phone <span class="req">*</span></label>
+                                    <input name="CompanyPhone" class="auth-input" placeholder="+1 234 567 8900" required />
+                                </div>
+
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Lead Agent Name <span class="req">*</span></label>
+                                    <input name="LeadAgentFullName" class="auth-input" placeholder="Jane Doe" required />
+                                </div>
+
+                                <div class="auth-input-group">
+                                    <label class="auth-label">Primary Branch</label>
+                                    <input name="Branch" class="auth-input" placeholder="Headquarters" />
+                                </div>
+
+                                <div class="auth-input-group grid-full">
+                                    <label class="auth-label">Headquarters Address</label>
+                                    <input name="CompanyAddress" class="auth-input" placeholder="456 Tower Way, Floor 12, City, Country" />
+                                </div>
+                            </div>
+
+                            <div class="compliance-note">
+                                <i class="bi bi-shield-check"></i>
+                                <span>Carrier applications undergo regulatory review prior to live policy underwriting.</span>
+                            </div>
+
+                            <button type="submit" class="auth-btn-primary">
+                                <i class="bi bi-building-check"></i>
+                                <span>Submit Partner Application</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="auth-bottom-text">
+                        <span>Already registered?</span>
+                        <a href="javascript:void(0)" onclick="switchMainTab('login')">Sign in here</a>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function switchMainTab(tab) {
+            const pillLogin = document.getElementById('pillTabLogin');
+            const pillRegister = document.getElementById('pillTabRegister');
+            const viewLogin = document.getElementById('loginView');
+            const viewRegister = document.getElementById('registerView');
+            const heroTitle = document.getElementById('heroTitle');
+            const heroSubtitle = document.getElementById('heroSubtitle');
+
+            if (tab === 'login') {
+                pillLogin.classList.add('active');
+                pillRegister.classList.remove('active');
+                viewLogin.classList.add('active');
+                viewRegister.classList.remove('active');
+
+                heroTitle.innerHTML = "Simplify<br />protection with<br />our insurance";
+                heroSubtitle.innerText = "Manage your policies, track incident claims, and get instant quote approvals with our user friendly insurance platform.";
+                window.location.hash = 'login';
+            } else {
+                pillRegister.classList.add('active');
+                pillLogin.classList.remove('active');
+                viewRegister.classList.add('active');
+                viewLogin.classList.remove('active');
+
+                heroTitle.innerHTML = "Join InsureHub<br />Get covered<br />in minutes";
+                heroSubtitle.innerText = "Create your profile to explore top insurance policies, receive instant quotes, and manage your protection effortlessly.";
+                window.location.hash = 'register';
+            }
+        }
+
+        function switchRegisterType(type) {
+            const btnCust = document.getElementById('typeBtnCustomer');
+            const btnComp = document.getElementById('typeBtnCompany');
+            const paneCust = document.getElementById('customerFormPane');
+            const paneComp = document.getElementById('companyFormPane');
+            const mainHeading = document.getElementById('regMainHeading');
+            const mainSubheading = document.getElementById('regMainSubheading');
+
+            if (type === 'customer') {
+                btnCust.classList.add('active');
+                btnComp.classList.remove('active');
+                paneCust.classList.add('active');
+                paneComp.classList.remove('active');
+
+                mainHeading.innerText = "Create Customer Account";
+                mainSubheading.innerText = "Sign up as a personal policyholder to get started";
+            } else {
+                btnComp.classList.add('active');
+                btnCust.classList.remove('active');
+                paneComp.classList.add('active');
+                paneCust.classList.remove('active');
+
+                mainHeading.innerText = "Partner Agency Onboarding";
+                mainSubheading.innerText = "Register your insurance company or brokerage firm";
+            }
+        }
+
+        function togglePasswordVisibility(inputId, btn) {
+            const el = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (el.type === 'password') {
+                el.type = 'text';
+                icon.className = 'bi bi-eye-slash';
+            } else {
+                el.type = 'password';
+                icon.className = 'bi bi-eye';
+            }
+        }
+
+        // Initialize state based on URL hash or params
+        window.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash;
+            const params = new URLSearchParams(window.location.search);
+            const tabParam = params.get('tab');
+            const typeParam = params.get('type');
+
+            if (hash === '#register' || tabParam === 'register') {
+                switchMainTab('register');
+            }
+            if (typeParam === 'company') {
+                switchRegisterType('company');
+            }
+        });
+    </script>
+
+</body>
+</html>
+</html>

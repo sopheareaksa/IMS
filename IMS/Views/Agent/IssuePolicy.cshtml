@@ -1,0 +1,124 @@
+@model IMS.Models.InsurancePolicy
+@{
+    ViewData["Title"] = "Issue Insurance Policy";
+    var quote = ViewBag.Quotation as IMS.Models.Quotation;
+}
+
+<div class="row justify-content-center py-3">
+    <div class="col-12 col-lg-8">
+        <div class="card">
+            <div class="card-header bg-white d-flex align-items-center justify-content-between py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width: 32px; height: 32px; border-radius: 8px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 15px;">
+                        <i class="bi bi-file-earmark-plus"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold text-dark">Issue Official Insurance Policy</h6>
+                        <small class="text-muted">Convert accepted quote #@(quote?.quoteId) into an active policy agreement</small>
+                    </div>
+                </div>
+                <a asp-action="Quotations" class="btn btn-sm btn-outline">
+                    <i class="bi bi-arrow-left"></i> Quotes
+                </a>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <!-- Underwriting Snapshot -->
+                <div class="p-3 bg-light rounded-3 mb-4 border">
+                    <div class="row g-2 small">
+                        <div class="col-sm-6">
+                            <span class="text-muted d-block">Policyholder Name:</span>
+                            <strong class="text-dark">@quote?.Customer?.fullName</strong>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted d-block">National ID:</span>
+                            <span class="text-dark">@(quote?.Customer?.nationalId ?? "N/A")</span>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted d-block">Selected Plan:</span>
+                            <strong class="text-primary">@quote?.InsuranceProduct?.name</strong>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted d-block">Agreed Annual Premium:</span>
+                            <span class="text-success fw-bold">$@quote?.estimatedPremium.ToString("N2")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <form asp-action="IssuePolicy" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="quoteId" />
+                    <input type="hidden" asp-for="agentId" />
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="policyNumber" class="form-label">Policy Number <span class="text-danger">*</span></label>
+                            <input asp-for="policyNumber" class="form-control font-monospace" required />
+                            <span asp-validation-for="policyNumber" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="coverageAmount" class="form-label">Total Coverage Limit ($) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted">$</span>
+                                <input asp-for="coverageAmount" type="number" step="0.01" min="1" class="form-control" required />
+                            </div>
+                            <span asp-validation-for="coverageAmount" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="startDate" class="form-label">Coverage Start Date <span class="text-danger">*</span></label>
+                            <input asp-for="startDate" type="date" class="form-control" required />
+                            <span asp-validation-for="startDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="endDate" class="form-label">Coverage End Date <span class="text-danger">*</span></label>
+                            <input asp-for="endDate" type="date" class="form-control" required />
+                            <span asp-validation-for="endDate" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="premiumAmount" class="form-label">Annual Premium Amount ($) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted">$</span>
+                            <input asp-for="premiumAmount" type="number" step="0.01" min="1" class="form-control" required />
+                        </div>
+                        <span asp-validation-for="premiumAmount" class="text-danger small"></span>
+                    </div>
+
+                    <hr class="my-4" />
+
+                    <h6 class="mb-3 fw-bold text-secondary text-uppercase small">Primary Beneficiary (Optional)</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label small">Beneficiary Name</label>
+                            <input type="text" name="beneficiaryName" class="form-control" placeholder="Full name" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Relationship</label>
+                            <input type="text" name="beneficiaryRelation" class="form-control" placeholder="Spouse / Child" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Contact Phone</label>
+                            <input type="text" name="beneficiaryPhone" class="form-control" placeholder="+855 ..." />
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between pt-3 border-top">
+                        <a asp-action="Quotations" class="btn btn-outline btn-md">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success btn-md">
+                            <i class="bi bi-shield-check"></i> Issue Official Policy
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

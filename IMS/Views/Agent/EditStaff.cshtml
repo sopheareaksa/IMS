@@ -1,0 +1,106 @@
+@model IMS.ViewModels.EditStaffViewModel
+@{
+    ViewData["Title"] = "Edit Agency Staff";
+    var company = ViewBag.Company as IMS.Models.Company;
+}
+
+<div class="row justify-content-center py-3">
+    <div class="col-12 col-lg-8 col-xl-7">
+        <div class="card">
+            <div class="card-header bg-white d-flex align-items-center justify-content-between py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width: 32px; height: 32px; border-radius: 8px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 15px;">
+                        <i class="bi bi-pencil-square"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold text-dark">Edit Staff Member</h6>
+                        <small class="text-muted">Update profile details for @Model.FullName under @(company?.name ?? Model.CompanyName)</small>
+                    </div>
+                </div>
+                <a asp-action="MyStaff" class="btn btn-sm btn-outline">
+                    <i class="bi bi-arrow-left"></i> Staff List
+                </a>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <form asp-action="EditStaff" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="StaffId" />
+                    <input type="hidden" asp-for="UserId" />
+                    <input type="hidden" asp-for="CompanyId" />
+
+                    <div asp-validation-summary="ModelOnly" class="alert-banner danger mb-4" role="alert"></div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="FullName" class="form-label">Full Legal Name <span class="text-danger">*</span></label>
+                            <input asp-for="FullName" class="form-control" placeholder="Full Name" required />
+                            <span asp-validation-for="FullName" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Phone" class="form-label">Phone Number</label>
+                            <input asp-for="Phone" class="form-control" placeholder="+855 ..." />
+                            <span asp-validation-for="Phone" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="AgentId" class="form-label">Supervising Agent <span class="text-danger">*</span></label>
+                            <select asp-for="AgentId" class="form-select" asp-items="ViewBag.Agents" required></select>
+                            <span asp-validation-for="AgentId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Status" class="form-label">Account Status <span class="text-danger">*</span></label>
+                            <select asp-for="Status" class="form-select" required>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                            <span asp-validation-for="Status" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Login Username</label>
+                            <input type="text" class="form-control bg-light font-monospace" value="@Model.Username" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                            <input asp-for="Email" class="form-control" type="email" placeholder="staff@agency.com" required />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="NewPassword" class="form-label">New Password</label>
+                        <input asp-for="NewPassword" class="form-control" placeholder="Leave blank to keep existing password" />
+                        <span asp-validation-for="NewPassword" class="text-danger small"></span>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 border mb-4">
+                        <div class="form-check form-switch mb-1">
+                            <input class="form-check-input" type="checkbox" asp-for="ReceiveAlerts" id="alertSwitch" />
+                            <label class="form-check-label fw-bold text-dark ms-2" for="alertSwitch">
+                                Receive Quote & Incident Alerts
+                            </label>
+                        </div>
+                        <small class="text-muted ps-4 d-block">Staff will be alerted automatically when quotes or claims are submitted for this agency.</small>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between pt-3 border-top">
+                        <a asp-action="MyStaff" class="btn btn-outline btn-md">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-md">
+                            <i class="bi bi-check-circle-fill"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

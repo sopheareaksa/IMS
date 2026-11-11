@@ -1,0 +1,91 @@
+@model IMS.ViewModels.EditProductViewModel
+@{
+    ViewData["Title"] = "Edit Insurance Product";
+}
+
+<div class="row justify-content-center py-3">
+    <div class="col-12 col-lg-8 col-xl-7">
+        <div class="card">
+            <div class="card-header bg-white d-flex align-items-center justify-content-between py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width: 32px; height: 32px; border-radius: 8px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 15px;">
+                        <i class="bi bi-pencil-square"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold text-dark">Edit Insurance Product</h6>
+                        <small class="text-muted">Modify plan benefits, annual base pricing, or publication state</small>
+                    </div>
+                </div>
+                <a asp-action="Products" class="btn btn-sm btn-outline">
+                    <i class="bi bi-arrow-left"></i> Catalog
+                </a>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <form asp-action="EditProduct" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="InProId" />
+                    <input type="hidden" asp-for="CompanyId" />
+
+                    <div asp-validation-summary="ModelOnly" class="alert-banner danger mb-4" role="alert"></div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Underwriting Provider</label>
+                            <input type="text" class="form-control bg-light" value="@(Model.CompanyName ?? "Host Platform")" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="InTypeId" class="form-label">Insurance Category <span class="text-danger">*</span></label>
+                            <select asp-for="InTypeId" class="form-select" asp-items="ViewBag.InsuranceTypes" required></select>
+                            <span asp-validation-for="InTypeId" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label">Product Name <span class="text-danger">*</span></label>
+                        <input asp-for="Name" class="form-control" required />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="BasePremium" class="form-label">Base Premium ($) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted">$</span>
+                                <input asp-for="BasePremium" class="form-control" type="number" step="0.01" min="1" required />
+                                <span class="input-group-text bg-light text-muted">/ yr</span>
+                            </div>
+                            <span asp-validation-for="BasePremium" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Status" class="form-label">Publication Status <span class="text-danger">*</span></label>
+                            <select asp-for="Status" class="form-select" required>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                            <span asp-validation-for="Status" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Detail" class="form-label">Plan Description & Benefits</label>
+                        <textarea asp-for="Detail" class="form-control" rows="4" placeholder="Detail coverage terms, emergency benefits, co-pay thresholds..."></textarea>
+                        <span asp-validation-for="Detail" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between pt-3 border-top">
+                        <a asp-action="Products" class="btn btn-outline btn-md">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-md">
+                            <i class="bi bi-check-circle-fill"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,0 +1,152 @@
+@model IMS.Models.InsuranceProduct
+@using IMS.Services
+@{
+    ViewData["Title"] = Model.name;
+    var typeName = Model.InsuranceType?.name ?? "General Insurance";
+    var visual = PlanVisuals.For(typeName);
+    var isHost = Model.Company?.isHostCompany == true;
+    var coverage = string.IsNullOrWhiteSpace(Model.detail) ? "This policy offers comprehensive protection tailored to customer requirements with priority claim handling and guaranteed coverage terms." : Model.detail;
+}
+
+<style>
+    .portal-card a { text-decoration: none; }
+</style>
+
+<div class="portal-card space-y-5">
+
+    <!-- ════ BLUE HERO ════ -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700 text-white p-6 md:p-8">
+        <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-white/10"></div>
+        <div class="absolute -right-4 bottom-0 w-40 h-40 rounded-full bg-white/5"></div>
+
+        <div class="relative">
+            <a asp-action="Index"
+               class="inline-flex items-center gap-2 text-sm font-medium text-blue-100 hover:text-white transition">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                Back to Plans
+            </a>
+
+            <div class="flex flex-wrap items-center gap-2 mt-4">
+                <span class="px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide bg-white/20 text-white">
+                    @typeName
+                </span>
+                @if (isHost)
+                {
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold text-white bg-emerald-600/90">
+                        <i data-lucide="badge-check" class="w-3 h-3"></i>
+                        Official Host Plan
+                    </span>
+                }
+            </div>
+
+            <h1 class="text-3xl md:text-4xl font-bold mt-4 leading-tight">@Model.name</h1>
+            <p class="text-blue-100 mt-2">
+                Underwritten by <strong class="text-white">@Model.Company?.name</strong>
+                &bull; Certified Provider Code:
+                <code class="text-white font-semibold">@Model.Company?.regNo</code>
+            </p>
+
+            <div class="flex flex-wrap items-center gap-6 mt-6">
+                <div class="inline-flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center">
+                        <i data-lucide="@visual.Icon" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <span class="block text-[11px] uppercase tracking-wide text-blue-100">Base Annual Premium</span>
+                        <span class="block text-2xl font-bold">$@Model.basePremium.ToString("N2") <span class="text-sm font-normal text-blue-100">/ yr</span></span>
+                    </div>
+                </div>
+                <div class="inline-flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center">
+                        <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <span class="block text-[11px] uppercase tracking-wide text-blue-100">Regulated Cover</span>
+                        <span class="block text-sm font-semibold">Claims handled in-house by @Model.Company?.name</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        <!-- ════ COVERAGE ════ -->
+        <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Coverage &amp; Plan Description</h2>
+            <p class="text-gray-700 leading-relaxed mt-3">@coverage</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                <div class="rounded-xl border border-gray-200 p-4">
+                    <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center mb-3">
+                        <i data-lucide="file-check-2" class="w-4 h-4 text-blue-600"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-gray-900">Digital policy issuance</h3>
+                    <p class="text-sm text-gray-500 mt-1">Once your quote is accepted, the policy is issued and downloadable the same day.</p>
+                </div>
+                <div class="rounded-xl border border-gray-200 p-4">
+                    <div class="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center mb-3">
+                        <i data-lucide="headphones" class="w-4 h-4 text-emerald-600"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-gray-900">Dedicated claims desk</h3>
+                    <p class="text-sm text-gray-500 mt-1">@Model.Company?.name handles notifications and settlements without third-party brokers.</p>
+                </div>
+            </div>
+
+            <!-- ════ PROVIDER DETAILS ════ -->
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500 mt-8 pt-6 border-t border-gray-100">Underwriting Partner Information</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                <div class="rounded-xl bg-gray-50 border border-gray-200 p-4">
+                    <span class="block text-[11px] uppercase tracking-wide text-gray-400 font-semibold">Underwriting Agency</span>
+                    <span class="block text-sm font-semibold text-gray-900 mt-1">@Model.Company?.name</span>
+                </div>
+                <div class="rounded-xl bg-gray-50 border border-gray-200 p-4">
+                    <span class="block text-[11px] uppercase tracking-wide text-gray-400 font-semibold">Certified Provider Code</span>
+                    <span class="block text-sm font-semibold text-gray-900 mt-1">@Model.Company?.regNo</span>
+                </div>
+                <div class="rounded-xl bg-gray-50 border border-gray-200 p-4">
+                    <span class="block text-[11px] uppercase tracking-wide text-gray-400 font-semibold">Carrier Email</span>
+                    <a href="mailto:@Model.Company?.email" class="block text-sm font-semibold text-blue-600 hover:text-blue-700 mt-1">@Model.Company?.email</a>
+                </div>
+                <div class="rounded-xl bg-gray-50 border border-gray-200 p-4">
+                    <span class="block text-[11px] uppercase tracking-wide text-gray-400 font-semibold">Helpline Phone</span>
+                    <span class="block text-sm font-semibold text-gray-900 mt-1">@Model.Company?.phone</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════ QUOTE PANEL ════ -->
+        <aside class="bg-white rounded-xl border border-gray-200 p-6 h-fit">
+            <div class="relative rounded-xl overflow-hidden bg-gradient-to-r @visual.Gradient h-24 mb-5">
+                <img src="@PlanVisuals.PhotoPath(visual)" alt="@typeName" class="absolute inset-0 w-full h-full object-cover" onerror="this.remove()" />
+                <div class="absolute inset-0 bg-gradient-to-t from-gray-900/70 to-transparent"></div>
+                <div class="relative h-full flex items-center px-4">
+                    <span class="text-white text-sm font-semibold uppercase tracking-wide">@typeName</span>
+                </div>
+            </div>
+
+            <span class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Starting from</span>
+            <div class="flex items-baseline gap-1.5 mt-1">
+                <span class="text-3xl font-bold text-emerald-600">$@Model.basePremium.ToString("N2")</span>
+                <span class="text-sm text-gray-400">/ yr</span>
+            </div>
+            <p class="text-sm text-gray-500 mt-3">Adjust the sum insured, add family members, or request specific limits &mdash; an underwriter replies with a tailored premium.</p>
+
+            <a asp-controller="Quotations" asp-action="RequestQuote" asp-route-inProId="@Model.inProId"
+               class="mt-5 w-full inline-flex justify-center items-center gap-2 px-4 py-3 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                <i data-lucide="message-square-quote" class="w-4 h-4"></i>
+                Customize a Quote
+            </a>
+            <a asp-action="Index"
+               class="mt-3 w-full inline-flex justify-center items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                Back to Plans
+            </a>
+
+            <div class="flex items-start gap-2 mt-5 pt-5 border-t border-gray-100 text-xs text-gray-500">
+                <i data-lucide="lock" class="w-4 h-4 text-gray-400 shrink-0 mt-0.5"></i>
+                <span>Non-binding request. Your details are shared only with @Model.Company?.name for underwriting.</span>
+            </div>
+        </aside>
+    </div>
+</div>

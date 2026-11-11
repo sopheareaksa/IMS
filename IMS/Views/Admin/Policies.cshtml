@@ -1,0 +1,131 @@
+@model IEnumerable<IMS.Models.InsurancePolicy>
+@{
+    ViewData["Title"] = "Platform Policies Master Record";
+    int activeCount = Model.Count(p => p.status == "Active");
+    decimal totalCoverage = Model.Sum(p => p.coverageAmount);
+}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Insurance Policies Master Record</div>
+        <div class="page-header-sub">Comprehensive portfolio of binding legal coverages issued across all underwriters.</div>
+    </div>
+</div>
+
+<div class="stat-row">
+    <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-label">Active Policies</div>
+                <div class="stat-value text-success">@activeCount</div>
+                <div class="stat-sub green">Legally binding</div>
+            </div>
+            <div class="stat-icon green"><i class="bi bi-shield-check"></i></div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-label">Total Portfolio Policies</div>
+                <div class="stat-value">@Model.Count()</div>
+                <div class="stat-sub gray">Cumulative issued</div>
+            </div>
+            <div class="stat-icon blue"><i class="bi bi-file-earmark-medical"></i></div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-label">Total Underwritten Protection</div>
+                <div class="stat-value text-primary">$@totalCoverage.ToString("N0")</div>
+                <div class="stat-sub blue">Aggregate liability</div>
+            </div>
+            <div class="stat-icon blue"><i class="bi bi-cash-stack"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-file-earmark-text me-2 text-primary"></i>Issued Policy Agreements</div>
+        <span class="badge badge-gray">@Model.Count() records</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Policy Number</th>
+                    <th>Policyholder</th>
+                    <th>Plan & Underwriter</th>
+                    <th>Issuing Agent</th>
+                    <th>Coverage Period</th>
+                    <th>Coverage Limit</th>
+                    <th>Premium</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var p in Model)
+                    {
+                        <tr>
+                            <td>
+                                <code class="fw-bold text-dark fs-6">@p.policyNumber</code>
+                            </td>
+                            <td>
+                                <div class="cell-primary fw-bold text-dark">@(p.Quotation?.Customer?.fullName ?? "Customer")</div>
+                                <div class="cell-sub"><i class="bi bi-telephone me-1"></i>@(p.Quotation?.Customer?.phone ?? "")</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark">@(p.Quotation?.InsuranceProduct?.name ?? "N/A")</div>
+                                <div class="cell-sub">
+                                    <span class="badge badge-gray">@(p.Quotation?.InsuranceProduct?.Company?.name ?? "N/A")</span>
+                                </div>
+                            </td>
+                            <td>
+                                @if (p.Agent != null)
+                                {
+                                    <div class="fw-semibold text-dark"><i class="bi bi-person-badge text-primary me-1"></i>@p.Agent.fullName</div>
+                                    <div class="cell-sub">@(p.Agent.branch ?? "Main HQ")</div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small fst-italic">Direct Platform</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="text-dark small">@p.startDate.ToString("MMM dd, yyyy")</div>
+                                <div class="cell-sub">to @p.endDate.ToString("MMM dd, yyyy")</div>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-primary">$@p.coverageAmount.ToString("N2")</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-success">$@p.premiumAmount.ToString("N2")</span>
+                                <span class="text-muted small">/ yr</span>
+                            </td>
+                            <td>
+                                <span class="badge @(p.status == "Active" ? "badge-success" : "badge-gray")">
+                                    @p.status
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <div class="empty-state-icon"><i class="bi bi-file-earmark-x"></i></div>
+                                <div class="empty-state-title">No policies issued yet</div>
+                                <div class="empty-state-desc">When accepted quotations are issued and paid, official certificates will appear here.</div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,182 @@
+@model IEnumerable<IMS.Models.InsuranceProduct>
+@using IMS.Services
+@{
+    ViewData["Title"] = "Browse Plans";
+    var types = ViewBag.InsuranceTypes as List<IMS.Models.InsuranceType> ?? new();
+    var companies = ViewBag.Companies as List<IMS.Models.Company> ?? new();
+    int? selectedType = ViewBag.SelectedTypeId as int?;
+    int? selectedCompany = ViewBag.SelectedCompanyId as int?;
+    string? search = ViewBag.SearchTerm as string;
+    var products = Model?.ToList() ?? new List<IMS.Models.InsuranceProduct>();
+    var planWord = products.Count == 1 ? "plan" : "plans";
+    var isCustomer = User.Identity?.IsAuthenticated == true && User.IsInRole("Customer");
+    var hasFilters = !string.IsNullOrWhiteSpace(search) || selectedType > 0 || selectedCompany > 0;
+}
+
+<style>
+    /* Tailwind's preflight is disabled app-wide so Bootstrap keeps its base styles,
+       which means anchors here still inherit their underline. Reset inside the portal
+       cards only; the utilities' own hover styles stay more specific and win. */
+    .portal-card a { text-decoration: none; }
+</style>
+
+<div class="portal-card space-y-5">
+
+    <!-- ════ PAGE HEADER ════ -->
+    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+        <div>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                Accredited Provider Catalogue
+            </span>
+            <h2 class="text-2xl font-bold text-gray-900 mt-3">Browse Insurance Plans</h2>
+            <p class="text-gray-500 mt-1">Compare cover from InsureHub and its accredited partner carriers, then request a personalised quote.</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            @if (isCustomer)
+            {
+                <a asp-controller="Customer" asp-action="MyQuotations"
+                   class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    <i data-lucide="clock" class="w-4 h-4"></i>
+                    My Quote Requests
+                </a>
+            }
+            <a asp-controller="Customer" asp-action="Dashboard"
+               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- ════ FILTERS ════ -->
+    <form method="get" class="bg-white rounded-xl border border-gray-200 p-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div class="md:col-span-2">
+                <label for="search" class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Search plans</label>
+                <div class="relative">
+                    <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                    <input id="search" type="text" name="search" value="@search" placeholder="Plan name or keyword..."
+                           class="w-full pl-9 pr-3 py-2.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+                </div>
+            </div>
+            <div>
+                <label for="typeId" class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Category</label>
+                <select id="typeId" name="typeId"
+                        class="w-full px-3 py-2.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="">All categories</option>
+                    @foreach (var t in types)
+                    {
+                        <option value="@t.inTypeId" selected="@(selectedType == t.inTypeId)">@t.name</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label for="companyId" class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Provider</label>
+                <select id="companyId" name="companyId"
+                        class="w-full px-3 py-2.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="">All providers</option>
+                    @foreach (var c in companies)
+                    {
+                        <option value="@c.companyId" selected="@(selectedCompany == c.companyId)">@c.name</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-gray-100">
+            <button type="submit"
+                    class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                Apply Filters
+            </button>
+            @if (hasFilters)
+            {
+                <a asp-action="Index"
+                   class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                    Clear Filters
+                </a>
+            }
+            <span class="text-sm text-gray-500 ms-auto">@products.Count @planWord available</span>
+        </div>
+    </form>
+
+    @if (products.Count > 0)
+    {
+        <!-- ════ PLAN CARDS ════ -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            @foreach (var p in products)
+            {
+                var typeName = p.InsuranceType?.name ?? "General Insurance";
+                var visual = PlanVisuals.For(typeName);
+                var isHost = p.Company?.isHostCompany == true;
+                <article class="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col transition hover:shadow-lg">
+                    <div class="relative h-32 bg-gradient-to-r @visual.Gradient">
+
+                        <div class="relative h-full p-4 flex flex-col">
+                            <div class="flex items-start justify-between gap-2">
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide bg-white/20 text-white">
+                                    @typeName
+                                </span>
+                                @if (isHost)
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-white bg-emerald-600/90">
+                                        <i data-lucide="badge-check" class="w-3 h-3"></i>
+                                        Official Host
+                                    </span>
+                                }
+                            </div>
+                            <div class="mt-auto">
+                                <h3 class="text-white text-base font-bold leading-snug line-clamp-2">@p.name</h3>
+                                <p class="text-gray-200 text-xs mt-1 inline-flex items-center gap-1.5">
+                                    <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
+                                    @(p.Company?.name ?? "InsureHub")
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-5 flex flex-col flex-grow">
+                        <p class="text-sm text-gray-500 line-clamp-3">@((!string.IsNullOrWhiteSpace(p.detail) ? p.detail : "Comprehensive protection with a tailored premium and responsive claims settlement."))</p>
+
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <span class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Base Annual Premium</span>
+                            <div class="flex items-baseline gap-1.5 mt-1">
+                                <span class="text-2xl font-bold text-emerald-600">$@p.basePremium.ToString("N2")</span>
+                                <span class="text-sm text-gray-400">/ yr</span>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3 mt-4">
+                            <a asp-controller="Quotations" asp-action="RequestQuote" asp-route-inProId="@p.inProId"
+                               class="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                                <i data-lucide="message-square-quote" class="w-4 h-4"></i>
+                                Get Quote
+                            </a>
+                            <a asp-action="Details" asp-route-id="@p.inProId"
+                               class="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                                Details
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </a>
+                        </div>
+                    </div>
+                </article>
+            }
+        }
+    }
+    else
+    {
+        <div class="bg-white rounded-xl border border-gray-200 p-10 text-center">
+            <div class="mx-auto w-14 h-14 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mb-4">
+                <i data-lucide="search-x" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900">No plans match your filters</h3>
+            <p class="text-sm text-gray-500 mt-1 max-w-md mx-auto">Try a different keyword or category. Every accredited plan is available as soon as you clear the filters.</p>
+            <a asp-action="Index"
+               class="inline-flex items-center gap-2 px-4 py-2 mt-5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                Show All Plans
+            </a>
+        </div>
+    }
+</div>

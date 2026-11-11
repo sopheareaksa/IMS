@@ -1,0 +1,69 @@
+@model IEnumerable<IMS.Models.InsuranceType>
+@{
+    ViewData["Title"] = "Insurance Categories";
+}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Insurance Classifications & Categories</div>
+        <div class="page-header-sub">Manage product taxonomy and policy classification categories across the ecosystem.</div>
+    </div>
+    <div class="page-header-actions">
+        <button class="btn btn-primary btn-md" data-bs-toggle="modal" data-bs-target="#newCategoryModal">
+            <i class="bi bi-plus-circle-fill"></i> New Category
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    @foreach (var t in Model)
+    {
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-col justify-content-between p-4">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div style="width: 40px; height: 40px; border-radius: 10px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                                <i class="bi bi-tag-fill"></i>
+                            </div>
+                            <span class="badge badge-primary">@t.Products.Count Plans</span>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-2" style="font-size: 15px;">@t.name</h5>
+                        <p class="text-secondary small mb-0" style="line-height: 1.5;">
+                            @(string.IsNullOrWhiteSpace(t.description) ? "Standard insurance classification and coverage scope." : t.description)
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Modal: New Category -->
+<div class="modal fade" id="newCategoryModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+            <form asp-action="CreateInsuranceType" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header py-3">
+                    <h5 class="modal-title fw-bold text-dark" style="font-size: 15px;"><i class="bi bi-tags me-2 text-primary"></i>Add Category Classification</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control" placeholder="e.g. Marine Cargo Protection" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description Scope</label>
+                        <textarea name="description" class="form-control" rows="3" placeholder="Category definition and eligible items..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0 py-3">
+                    <button type="button" class="btn btn-outline btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Save Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

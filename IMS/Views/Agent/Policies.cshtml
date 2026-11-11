@@ -1,0 +1,87 @@
+@model IEnumerable<IMS.Models.InsurancePolicy>
+@{
+    ViewData["Title"] = "Issued Insurance Policies";
+    int activeCount = Model.Count(p => p.status == "Active");
+}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Issued Insurance Policies</div>
+        <div class="page-header-sub">Active and archived binding legal policies underwritten by your agency.</div>
+    </div>
+    <div class="page-header-actions">
+        <span class="badge badge-success"><i class="bi bi-shield-check me-1"></i>@activeCount Active</span>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-file-earmark-medical me-2 text-primary"></i>Agency Policy Portfolio</div>
+        <span class="badge badge-gray">@Model.Count() records</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Policy Number</th>
+                    <th>Policyholder</th>
+                    <th>Plan</th>
+                    <th>Underwriting Agent</th>
+                    <th>Coverage Term</th>
+                    <th>Coverage Limit</th>
+                    <th>Annual Premium</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var p in Model)
+                    {
+                        <tr>
+                            <td><code class="fw-bold fs-6 text-dark">@p.policyNumber</code></td>
+                            <td>
+                                <div class="cell-primary fw-bold text-dark">@p.Quotation?.Customer?.fullName</div>
+                                <div class="cell-sub"><i class="bi bi-telephone me-1"></i>@(p.Quotation?.Customer?.phone ?? "")</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark">@p.Quotation?.InsuranceProduct?.name</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark"><i class="bi bi-person-badge text-primary me-1"></i>@(p.Agent?.fullName ?? "Unassigned")</div>
+                            </td>
+                            <td>
+                                <div class="text-dark small">@p.startDate.ToString("MMM dd, yyyy")</div>
+                                <div class="cell-sub">to @p.endDate.ToString("MMM dd, yyyy")</div>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-primary">$@p.coverageAmount.ToString("N2")</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-success">$@p.premiumAmount.ToString("N2")</span>
+                                <span class="text-muted small">/ yr</span>
+                            </td>
+                            <td>
+                                <span class="badge @(p.status == "Active" ? "badge-success" : "badge-gray")">
+                                    @p.status
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <div class="empty-state-icon"><i class="bi bi-file-earmark-x"></i></div>
+                                <div class="empty-state-title">No policies issued yet</div>
+                                <div class="empty-state-desc">Review accepted quotations to convert them into binding policies.</div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

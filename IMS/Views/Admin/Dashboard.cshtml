@@ -1,0 +1,410 @@
+@model IMS.ViewModels.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Admin Overview - InsureHub";
+    var now = DateTime.Now;
+    string greeting = now.Hour < 12 ? "Good morning" : now.Hour < 17 ? "Good afternoon" : "Good evening";
+    string adminName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "Administrator";
+}
+
+<!-- ════ EXECUTIVE PAGE HEADER ════ -->
+<div class="page-header" style="align-items: center; margin-bottom: 24px;">
+    <div>
+        <div style="display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 4px 12px; border-radius: 99px; margin-bottom: 8px;">
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+            System Operational &bull; All Services Live
+        </div>
+        <div class="page-header-title" style="font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.025em; margin-bottom: 4px;">
+            @greeting, @adminName
+        </div>
+        <div class="page-header-sub" style="color: #64748b; font-size: 13.5px;">
+            Platform administration console &mdash; monitor carrier partners, policy performance, and claim liabilities.
+        </div>
+    </div>
+    
+    <!-- Top Action Buttons (Outside Table) -->
+    <div class="page-header-actions">
+        <a asp-controller="Admin" asp-action="Companies" class="btn btn-outline btn-sm">
+            <i class="bi bi-buildings"></i> Carrier Partners
+        </a>
+        <a asp-controller="Admin" asp-action="Quotations" class="btn btn-outline btn-sm">
+            <i class="bi bi-chat-left-quote"></i> Quotations
+        </a>
+        <a asp-controller="Admin" asp-action="CreateProduct" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle"></i> Create Insurance Plan
+        </a>
+    </div>
+</div>
+
+<!-- ════ PENDING ATTENTION BANNERS ════ -->
+@if (Model.PendingCompanies.Any())
+{
+    <div style="background: #fffbeb; border: 1px solid #fef3c7; border-left: 4px solid #f59e0b; border-radius: 12px; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;">
+                <i class="bi bi-buildings"></i>
+            </div>
+            <div>
+                <div style="font-size: 13.5px; font-weight: 700; color: #92400e;">
+                    @Model.PendingCompanies.Count Partner Registration(s) Pending Review
+                </div>
+                <div style="font-size: 12px; color: #b45309; margin-top: 2px;">
+                    Insurance agency applications require verification before representative staff can underwrite policies.
+                </div>
+            </div>
+        </div>
+        <a asp-controller="Admin" asp-action="Companies" asp-route-status="Pending" class="btn btn-sm" style="background: #d97706; color: #ffffff; border: none; font-weight: 600; white-space: nowrap;">
+            Review Applications &rarr;
+        </a>
+    </div>
+}
+
+@if (Model.PendingAdminQuotations.Any())
+{
+    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #2563eb; border-radius: 12px; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: #dbeafe; color: #1d4ed8; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;">
+                <i class="bi bi-chat-left-quote"></i>
+            </div>
+            <div>
+                <div style="font-size: 13.5px; font-weight: 700; color: #1e40af;">
+                    @Model.PendingAdminQuotations.Count Official Quote Request(s) Awaiting Decision
+                </div>
+                <div style="font-size: 12px; color: #2563eb; margin-top: 2px;">
+                    Prospective policyholders requested pricing for official InsureHub plans.
+                </div>
+            </div>
+        </div>
+        <a asp-controller="Admin" asp-action="Quotations" asp-route-status="Pending" asp-route-scope="AdminPlans" class="btn btn-primary btn-sm" style="white-space: nowrap;">
+            Process Quotations &rarr;
+        </a>
+    </div>
+}
+
+<!-- ════ KPI STAT CARDS (Clean, Simple Colors) ════ -->
+<div class="stat-row" style="grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
+    <div class="stat-card" style="border-radius: 16px; border: 1px solid #e2e8f0; padding: 18px 20px;">
+        <div class="stat-icon" style="background: #f1f5f9; color: #2563eb; border-radius: 12px; width: 44px; height: 44px; font-size: 20px;">
+            <i class="bi bi-buildings"></i>
+        </div>
+        <div class="stat-body">
+            <div class="stat-label" style="font-size: 11.5px; font-weight: 700; color: #64748b;">Carrier Partners</div>
+            <div class="stat-value" style="font-size: 28px; font-weight: 800; color: #0f172a;">@Model.TotalCompanies</div>
+            <div class="stat-sub" style="color: #d97706; font-size: 11.5px; font-weight: 600;">
+                <i class="bi bi-clock-history"></i> @Model.PendingCompaniesCount awaiting approval
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card" style="border-radius: 16px; border: 1px solid #e2e8f0; padding: 18px 20px;">
+        <div class="stat-icon" style="background: #ecfdf5; color: #059669; border-radius: 12px; width: 44px; height: 44px; font-size: 20px;">
+            <i class="bi bi-shield-check"></i>
+        </div>
+        <div class="stat-body">
+            <div class="stat-label" style="font-size: 11.5px; font-weight: 700; color: #64748b;">Active Policies</div>
+            <div class="stat-value" style="font-size: 28px; font-weight: 800; color: #0f172a;">@Model.ActivePoliciesCount</div>
+            <div class="stat-sub" style="color: #059669; font-size: 11.5px; font-weight: 600;">
+                <i class="bi bi-check2-circle"></i> Platform-wide live coverage
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card" style="border-radius: 16px; border: 1px solid #e2e8f0; padding: 18px 20px;">
+        <div class="stat-icon" style="background: #eff6ff; color: #3b82f6; border-radius: 12px; width: 44px; height: 44px; font-size: 20px;">
+            <i class="bi bi-chat-left-quote"></i>
+        </div>
+        <div class="stat-body">
+            <div class="stat-label" style="font-size: 11.5px; font-weight: 700; color: #64748b;">Quotations</div>
+            <div class="stat-value" style="font-size: 28px; font-weight: 800; color: #0f172a;">@Model.TotalQuotations</div>
+            <div class="stat-sub" style="color: #64748b; font-size: 11.5px; font-weight: 600;">
+                <i class="bi bi-box-seam"></i> @Model.TotalProducts catalog plans
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card" style="border-radius: 16px; border: 1px solid #e2e8f0; padding: 18px 20px;">
+        <div class="stat-icon" style="background: #fff1f2; color: #e11d48; border-radius: 12px; width: 44px; height: 44px; font-size: 20px;">
+            <i class="bi bi-exclamation-octagon"></i>
+        </div>
+        <div class="stat-body">
+            <div class="stat-label" style="font-size: 11.5px; font-weight: 700; color: #64748b;">Open Claims</div>
+            <div class="stat-value" style="font-size: 28px; font-weight: 800; color: #0f172a;">@Model.PendingClaimsCount</div>
+            <div class="stat-sub" style="color: #e11d48; font-size: 11.5px; font-weight: 600;">
+                <i class="bi bi-exclamation-circle"></i> Under review
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════ MAIN DATA GRIDS: Recent Quotations & Claims (Clean, No action buttons in table) ════ -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+
+    <!-- Recent Quotations -->
+    <div class="panel" style="border-radius: 18px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div class="panel-header" style="background: #ffffff; border-bottom: 1px solid #f1f5f9; padding: 16px 20px;">
+            <div class="panel-title" style="font-size: 14px; font-weight: 700; color: #0f172a;">
+                <i class="bi bi-chat-left-quote me-2 text-primary"></i>Recent Quotation Requests
+            </div>
+            <a asp-controller="Admin" asp-action="Quotations" class="btn btn-outline btn-sm">
+                View All &rarr;
+            </a>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="panel-table">
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Insurance Plan</th>
+                        <th>Est. Premium</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.RecentQuotations.Any())
+                    {
+                        @foreach (var q in Model.RecentQuotations)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="cell-primary" style="font-weight: 600; color: #0f172a;">@q.Customer?.fullName</div>
+                                    <div class="cell-sub" style="color: #94a3b8; font-size: 11px;">@q.requestDate.ToString("MMM dd, yyyy")</div>
+                                </td>
+                                <td>
+                                    <div class="cell-primary" style="font-weight: 600; color: #1e293b;">@q.InsuranceProduct?.name</div>
+                                    <div class="cell-sub" style="color: #64748b; font-size: 11px;">@q.InsuranceProduct?.Company?.name</div>
+                                </td>
+                                <td style="font-weight: 700; color: #059669;">
+                                    $@q.estimatedPremium.ToString("N2")
+                                </td>
+                                <td>
+                                    <span class="badge @(q.status == "Accepted" ? "badge-success" : q.status == "Pending" ? "badge-warning" : "badge-gray")">
+                                        @q.status
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 32px; color: #94a3b8; font-size: 12.5px;">
+                                <i class="bi bi-inbox" style="font-size: 24px; display: block; margin-bottom: 6px;"></i>
+                                No quotation requests filed yet.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Recent Claims -->
+    <div class="panel" style="border-radius: 18px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div class="panel-header" style="background: #ffffff; border-bottom: 1px solid #f1f5f9; padding: 16px 20px;">
+            <div class="panel-title" style="font-size: 14px; font-weight: 700; color: #0f172a;">
+                <i class="bi bi-exclamation-octagon me-2 text-danger"></i>Recent Incident Claims
+            </div>
+            <a asp-controller="Admin" asp-action="Claims" class="btn btn-outline btn-sm">
+                View All &rarr;
+            </a>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="panel-table">
+                <thead>
+                    <tr>
+                        <th>Policy / Claimant</th>
+                        <th>Incident Details</th>
+                        <th>Claim Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.RecentClaims.Any())
+                    {
+                        @foreach (var c in Model.RecentClaims)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="cell-primary">
+                                        <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-weight: 700;">@c.InsurancePolicy?.policyNumber</code>
+                                    </div>
+                                    <div class="cell-sub" style="color: #64748b; font-size: 11.5px; margin-top: 2px;">
+                                        @c.InsurancePolicy?.Quotation?.Customer?.fullName
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="cell-primary" style="font-weight: 600; color: #1e293b;">@c.incidentType</div>
+                                    <div class="cell-sub" style="color: #94a3b8; font-size: 11px;">@c.incidentLocation</div>
+                                </td>
+                                <td style="font-weight: 700; color: #e11d48;">
+                                    $@c.claimAmount.ToString("N2")
+                                </td>
+                                <td>
+                                    <span class="badge @(c.status == "Approved" || c.status == "Paid" ? "badge-success" : c.status == "Submitted" ? "badge-warning" : "badge-danger")">
+                                        @c.status
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 32px; color: #94a3b8; font-size: 12.5px;">
+                                <i class="bi bi-shield-check" style="font-size: 24px; display: block; margin-bottom: 6px;"></i>
+                                No incident claims pending review.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- ════ BOTTOM TRIO: Notice Board + Quick Shortcuts + Portfolio Donut ════ -->
+<div style="display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 20px;">
+
+    <!-- System Notice Board -->
+    <div class="panel" style="border-radius: 18px; border: 1px solid #e2e8f0;">
+        <div class="panel-header" style="background: #ffffff; border-bottom: 1px solid #f1f5f9; padding: 16px 20px;">
+            <div class="panel-title" style="font-size: 14px; font-weight: 700; color: #0f172a;">
+                <i class="bi bi-bell me-2 text-primary"></i>Action Notices
+            </div>
+            <a asp-controller="Admin" asp-action="Companies" class="btn btn-outline btn-sm">Directory</a>
+        </div>
+        <div class="panel-body" style="padding: 16px 20px;">
+            <div class="notice-item" style="padding: 10px 0;">
+                <div class="notice-icon" style="background: #f1f5f9; color: #2563eb;">
+                    <i class="bi bi-buildings"></i>
+                </div>
+                <div class="notice-body">
+                    <div class="notice-title" style="font-weight: 700; color: #0f172a;">Carrier Onboarding</div>
+                    <div class="notice-desc" style="color: #64748b;">@Model.PendingCompaniesCount enterprise applicant(s) pending regulatory approval.</div>
+                    <div class="notice-date" style="color: #2563eb; font-weight: 600;">Action Required</div>
+                </div>
+            </div>
+            <div class="notice-item" style="padding: 10px 0;">
+                <div class="notice-icon" style="background: #fffbeb; color: #d97706;">
+                    <i class="bi bi-chat-left-quote"></i>
+                </div>
+                <div class="notice-body">
+                    <div class="notice-title" style="font-weight: 700; color: #0f172a;">Direct Quote Submissions</div>
+                    <div class="notice-desc" style="color: #64748b;">@Model.PendingAdminQuotations.Count direct customer proposal(s) awaiting underwriting.</div>
+                    <div class="notice-date" style="color: #d97706; font-weight: 600;">Pending Underwriter</div>
+                </div>
+            </div>
+            <div class="notice-item" style="padding: 10px 0;">
+                <div class="notice-icon" style="background: #fff1f2; color: #e11d48;">
+                    <i class="bi bi-exclamation-octagon"></i>
+                </div>
+                <div class="notice-body">
+                    <div class="notice-title" style="font-weight: 700; color: #0f172a;">Incident Adjudication</div>
+                    <div class="notice-desc" style="color: #64748b;">@Model.PendingClaimsCount claim file(s) actively undergoing fraud & loss assessment.</div>
+                    <div class="notice-date" style="color: #e11d48; font-weight: 600;">Review in Progress</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Navigation Hub -->
+    <div class="panel" style="border-radius: 18px; border: 1px solid #e2e8f0;">
+        <div class="panel-header" style="background: #ffffff; border-bottom: 1px solid #f1f5f9; padding: 16px 20px;">
+            <div class="panel-title" style="font-size: 14px; font-weight: 700; color: #0f172a;">
+                <i class="bi bi-grid me-2 text-primary"></i>Management Hub
+            </div>
+        </div>
+        <div class="panel-body" style="padding: 16px 20px;">
+            <div class="quick-grid">
+                <a asp-controller="Admin" asp-action="Companies" class="quick-item" style="border-radius: 14px;">
+                    <div class="quick-item-icon" style="background: #eff6ff; color: #2563eb; border-radius: 10px;"><i class="bi bi-buildings"></i></div>
+                    <div class="quick-item-label" style="font-weight: 600; color: #1e293b;">Carriers</div>
+                </a>
+                <a asp-controller="Admin" asp-action="Staff" class="quick-item" style="border-radius: 14px;">
+                    <div class="quick-item-icon" style="background: #f0fdf4; color: #059669; border-radius: 10px;"><i class="bi bi-people"></i></div>
+                    <div class="quick-item-label" style="font-weight: 600; color: #1e293b;">Staff</div>
+                </a>
+                <a asp-controller="Admin" asp-action="Products" class="quick-item" style="border-radius: 14px;">
+                    <div class="quick-item-icon" style="background: #f8fafc; color: #475569; border-radius: 10px;"><i class="bi bi-box-seam"></i></div>
+                    <div class="quick-item-label" style="font-weight: 600; color: #1e293b;">Products</div>
+                </a>
+                <a asp-controller="Admin" asp-action="Quotations" class="quick-item" style="border-radius: 14px;">
+                    <div class="quick-item-icon" style="background: #fffbeb; color: #d97706; border-radius: 10px;"><i class="bi bi-chat-left-quote"></i></div>
+                    <div class="quick-item-label" style="font-weight: 600; color: #1e293b;">Quotes</div>
+                </a>
+                <a asp-controller="Admin" asp-action="Policies" class="quick-item" style="border-radius: 14px;">
+                    <div class="quick-item-icon" style="background: #ecfdf5; color: #059669; border-radius: 10px;"><i class="bi bi-file-earmark-medical"></i></div>
+                    <div class="quick-item-label" style="font-weight: 600; color: #1e293b;">Policies</div>
+                </a>
+                <a asp-controller="Admin" asp-action="Claims" class="quick-item" style="border-radius: 14px;">
+                    <div class="quick-item-icon" style="background: #fff1f2; color: #e11d48; border-radius: 10px;"><i class="bi bi-exclamation-octagon"></i></div>
+                    <div class="quick-item-label" style="font-weight: 600; color: #1e293b;">Claims</div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Platform Distribution Donut -->
+    <div class="panel" style="border-radius: 18px; border: 1px solid #e2e8f0;">
+        <div class="panel-header" style="background: #ffffff; border-bottom: 1px solid #f1f5f9; padding: 16px 20px;">
+            <div class="panel-title" style="font-size: 14px; font-weight: 700; color: #0f172a;">
+                <i class="bi bi-pie-chart me-2 text-primary"></i>Platform Summary
+            </div>
+        </div>
+        <div class="panel-body" style="padding: 18px 20px;">
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 18px;">
+                <div style="position: relative; width: 84px; height: 84px; flex-shrink: 0;">
+                    <svg viewBox="0 0 36 36" style="width: 84px; height: 84px; transform: rotate(-90deg);">
+                        <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f1f5f9" stroke-width="3.5"/>
+                        <circle cx="18" cy="18" r="15.9" fill="none" stroke="#2563eb" stroke-width="3.5"
+                                stroke-dasharray="60 100" stroke-linecap="round"/>
+                        <circle cx="18" cy="18" r="15.9" fill="none" stroke="#059669" stroke-width="3.5"
+                                stroke-dasharray="20 100" stroke-dashoffset="-60" stroke-linecap="round"/>
+                        <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f59e0b" stroke-width="3.5"
+                                stroke-dasharray="12 100" stroke-dashoffset="-80" stroke-linecap="round"/>
+                        <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e11d48" stroke-width="3.5"
+                                stroke-dasharray="8 100" stroke-dashoffset="-92" stroke-linecap="round"/>
+                    </svg>
+                    <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div style="font-size: 15px; font-weight: 800; color: #0f172a;">@Model.TotalCompanies</div>
+                        <div style="font-size: 9px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">Partners</div>
+                    </div>
+                </div>
+
+                <div class="perf-legend" style="flex: 1;">
+                    <div class="perf-legend-item">
+                        <div class="perf-dot" style="background: #2563eb;"></div>
+                        <div class="perf-label" style="font-size: 12px; color: #64748b;">Active Policies</div>
+                        <div class="perf-pct" style="font-weight: 700; color: #0f172a;">@Model.ActivePoliciesCount</div>
+                    </div>
+                    <div class="perf-legend-item">
+                        <div class="perf-dot" style="background: #059669;"></div>
+                        <div class="perf-label" style="font-size: 12px; color: #64748b;">Quotations</div>
+                        <div class="perf-pct" style="font-weight: 700; color: #0f172a;">@Model.TotalQuotations</div>
+                    </div>
+                    <div class="perf-legend-item">
+                        <div class="perf-dot" style="background: #f59e0b;"></div>
+                        <div class="perf-label" style="font-size: 12px; color: #64748b;">Pending Carriers</div>
+                        <div class="perf-pct" style="font-weight: 700; color: #0f172a;">@Model.PendingCompaniesCount</div>
+                    </div>
+                    <div class="perf-legend-item">
+                        <div class="perf-dot" style="background: #e11d48;"></div>
+                        <div class="perf-label" style="font-size: 12px; color: #64748b;">Open Claims</div>
+                        <div class="perf-pct" style="font-weight: 700; color: #0f172a;">@Model.PendingClaimsCount</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+                <a asp-controller="Admin" asp-action="AddStaff" class="btn btn-primary btn-sm" style="flex: 1;">
+                    <i class="bi bi-person-plus"></i> Add Staff
+                </a>
+                <a asp-controller="Admin" asp-action="InsuranceTypes" class="btn btn-outline btn-sm" style="flex: 1;">
+                    <i class="bi bi-tags"></i> Categories
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+

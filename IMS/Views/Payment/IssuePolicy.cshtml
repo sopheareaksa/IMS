@@ -1,0 +1,683 @@
+@model IMS.ViewModels.IssuePolicyPaymentViewModel
+@{
+    ViewData["Title"] = "Issue Policy & Payment";
+}
+
+<div class="container py-4">
+    <!-- Breadcrumb & Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small">
+                    <li class="breadcrumb-item"><a asp-controller="Customer" asp-action="MyQuotations" class="text-decoration-none">Quotations</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Issue Policy & Pay</li>
+                </ol>
+            </nav>
+            <h3 class="fw-bold text-dark mb-0">
+                <i class="bi bi-shield-check text-primary me-2"></i>Issue Policy & Secure Payment
+            </h3>
+            <p class="text-muted small mb-0">Review underwriting policy details and choose to pay via <strong>Bakong KHQR</strong> or <strong>Field Form (Card / Bank Transfer)</strong>.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Customer" asp-action="MyQuotations" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Back to Quotes
+            </a>
+        </div>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+    {
+        <div class="alert alert-danger rounded-3 shadow-xs mb-4">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <strong>Please correct the following errors:</strong>
+            </div>
+            <div asp-validation-summary="All" class="small mb-0 ps-3"></div>
+        </div>
+    }
+
+    <form asp-action="ConfirmPolicyPayment" method="post" id="issuePolicyForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="QuoteId" />
+        <input type="hidden" asp-for="InProId" />
+        <input type="hidden" asp-for="AgentId" />
+        <input type="hidden" asp-for="CustomerId" />
+        <input type="hidden" asp-for="CustomerName" />
+        <input type="hidden" asp-for="CustomerPhone" />
+        <input type="hidden" asp-for="CustomerNationalId" />
+        <input type="hidden" asp-for="ProductName" />
+        <input type="hidden" asp-for="CompanyName" />
+        <input type="hidden" asp-for="Currency" />
+        <input type="hidden" asp-for="QrCodeString" id="qrCodeStringInput" />
+        <input type="hidden" asp-for="Md5" />
+        <input type="hidden" asp-for="ExpirationTimestamp" id="expTimestampInput" />
+        <input type="hidden" asp-for="BakongAccountId" />
+        <input type="hidden" asp-for="MerchantName" />
+        <input type="hidden" asp-for="MerchantCity" />
+
+        <!-- Selected Payment Method & Type Hidden Inputs -->
+        <input type="hidden" asp-for="PaymentMethod" id="paymentMethodInput" value="@(string.IsNullOrEmpty(Model.PaymentMethod) ? "QR" : Model.PaymentMethod)" />
+        <input type="hidden" asp-for="FieldPaymentType" id="fieldPaymentTypeInput" value="@(string.IsNullOrEmpty(Model.FieldPaymentType) ? "Card" : Model.FieldPaymentType)" />
+
+        <div class="row g-4">
+            <!-- Left Column: Policy Information & Beneficiary Form -->
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-header bg-white border-bottom py-3 px-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold text-primary">
+                                <i class="bi bi-file-earmark-text me-2"></i>1. Policy Underwriting Details
+                            </h6>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 rounded-pill">
+                                Quote #@Model.QuoteId
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Summary Banner -->
+                        <div class="p-3 bg-light rounded-3 mb-4 border">
+                            <div class="row g-2 small">
+                                <div class="col-sm-6">
+                                    <span class="text-muted d-block">Policyholder Name:</span>
+                                    <strong class="text-dark">@Model.CustomerName</strong>
+                                </div>
+                                <div class="col-sm-6">
+                                    <span class="text-muted d-block">National ID:</span>
+                                    <span class="text-dark">@(Model.CustomerNationalId ?? "N/A")</span>
+                                </div>
+                                <div class="col-sm-6">
+                                    <span class="text-muted d-block">Selected Plan:</span>
+                                    <strong class="text-primary">@Model.ProductName</strong>
+                                    <span class="text-muted">(@Model.ProductType)</span>
+                                </div>
+                                <div class="col-sm-6">
+                                    <span class="text-muted d-block">Insurance Carrier:</span>
+                                    <span class="badge bg-secondary-subtle text-secondary">@Model.CompanyName</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Policy Fields -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="PolicyNumber" class="form-label fw-semibold small">Policy Number <span class="text-danger">*</span></label>
+                                <input asp-for="PolicyNumber" class="form-control font-monospace" required />
+                                <span asp-validation-for="PolicyNumber" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="CoverageAmount" class="form-label fw-semibold small">Coverage Limit ($) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input asp-for="CoverageAmount" type="number" step="0.01" min="1" class="form-control" required />
+                                </div>
+                                <span asp-validation-for="CoverageAmount" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="StartDate" class="form-label fw-semibold small">Coverage Start Date <span class="text-danger">*</span></label>
+                                <input asp-for="StartDate" type="date" class="form-control" required />
+                                <span asp-validation-for="StartDate" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="EndDate" class="form-label fw-semibold small">Coverage End Date <span class="text-danger">*</span></label>
+                                <input asp-for="EndDate" type="date" class="form-control" required />
+                                <span asp-validation-for="EndDate" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="PremiumAmount" class="form-label fw-semibold small">Payable Premium Amount ($) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-success-subtle text-success fw-bold">$</span>
+                                <input asp-for="PremiumAmount" type="number" step="0.01" min="0.01" class="form-control fw-bold text-success fs-5" readonly />
+                            </div>
+                            <small class="text-muted">Calculated from approved quotation underwriting terms.</small>
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <!-- Beneficiary Section -->
+                        <h6 class="mb-3 fw-bold text-secondary text-uppercase small">
+                            <i class="bi bi-people me-1"></i> 2. Primary Beneficiary (Optional)
+                        </h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label asp-for="BeneficiaryName" class="form-label small fw-semibold">Beneficiary Name</label>
+                                <input asp-for="BeneficiaryName" class="form-control" placeholder="Full name" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="BeneficiaryRelation" class="form-label small fw-semibold">Relationship</label>
+                                <input asp-for="BeneficiaryRelation" class="form-control" placeholder="Spouse / Child" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="BeneficiaryPhone" class="form-label small fw-semibold">Phone Number</label>
+                                <input asp-for="BeneficiaryPhone" class="form-control" placeholder="+855 ..." />
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center pt-3 border-top">
+                            <button type="submit" name="submitAction" value="cancel" class="btn btn-outline-danger">
+                                <i class="bi bi-x-circle me-1"></i> Cancel Payment
+                            </button>
+                            <button type="submit" name="submitAction" value="confirm" id="confirmPaymentBtn" class="btn btn-success px-4 py-2 fw-bold shadow-sm">
+                                <i class="bi bi-check2-circle me-1"></i> <span id="confirmBtnText">Confirm Payment & Activate Policy</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Developer Testing Panel -->
+                <div class="card border border-dashed rounded-4 bg-light">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div class="small">
+                                <strong class="text-secondary"><i class="bi bi-tools me-1"></i> Sandbox / Test Simulator:</strong>
+                                <span class="text-muted d-block">Test verification outcomes without scanning real money:</span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="submit" name="submitAction" value="simulate_success" class="btn btn-sm btn-outline-primary fw-semibold">
+                                    <i class="bi bi-check-lg me-1"></i> Test: Success
+                                </button>
+                                <button type="submit" name="simulate_failed" value="simulate_failed" class="btn btn-sm btn-outline-secondary fw-semibold">
+                                    <i class="bi bi-x-lg me-1"></i> Test: Failed
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Payment Method Selection (QR or Field Form) -->
+            <div class="col-lg-6">
+                <!-- Payment Method Toggle Card -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+                    <div class="card-header bg-white border-bottom py-3 px-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold text-dark">
+                                <i class="bi bi-credit-card-2-back me-2 text-primary"></i>2. Choose Payment Method
+                            </h6>
+                            <span class="badge bg-success-subtle text-success px-2.5 py-1 rounded-pill small">
+                                Secure Checkout
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body p-3">
+                        <!-- Method Selector Pills / Buttons -->
+                        <div class="row g-2 mb-1" id="paymentMethodSelectors">
+                            <div class="col-6">
+                                <button type="button" id="btnMethodQR" class="w-100 p-3 rounded-3 text-start border transition-all @(Model.PaymentMethod == "QR" ? "border-primary bg-primary-subtle text-primary fw-bold shadow-xs ring-2" : "border-slate-200 bg-white text-secondary")" onclick="selectPaymentMethod('QR')">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <i class="bi bi-qr-code fs-4 text-danger"></i>
+                                        <div>
+                                            <div class="small text-dark fw-bold">Bakong KHQR</div>
+                                            <span class="badge bg-danger-subtle text-danger" style="font-size: 10px;">Scan to Pay</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-muted" style="font-size: 11px;">ABA, Bakong, ACLEDA & Apps</div>
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button type="button" id="btnMethodField" class="w-100 p-3 rounded-3 text-start border transition-all @(Model.PaymentMethod == "FieldForm" ? "border-primary bg-primary-subtle text-primary fw-bold shadow-xs ring-2" : "border-slate-200 bg-white text-secondary")" onclick="selectPaymentMethod('FieldForm')">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <i class="bi bi-credit-card-2-front fs-4 text-primary"></i>
+                                        <div>
+                                            <div class="small text-dark fw-bold">Field Form</div>
+                                            <span class="badge bg-primary-subtle text-primary" style="font-size: 10px;">Card / Bank</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-muted" style="font-size: 11px;">Visa, Mastercard, Bank Transfer</div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTAINER 1: QR Payment (Bakong KHQR) -->
+                <div id="qrPaymentContainer" class="@(Model.PaymentMethod == "FieldForm" ? "d-none" : "")">
+                    <div class="card border-0 shadow rounded-4 overflow-hidden">
+                        <!-- Bakong KHQR Header -->
+                        <div class="p-3 text-white text-center" style="background: linear-gradient(135deg, #e1251b 0%, #b3140c 100%);">
+                            <div class="d-flex justify-content-between align-items-center px-2">
+                                <span class="badge bg-white text-danger fw-bold text-uppercase px-2.5 py-1">
+                                    KHQR
+                                </span>
+                                <span class="small fw-semibold text-white-50">
+                                    National Bank of Cambodia
+                                </span>
+                            </div>
+                            <h4 class="mt-2 mb-0 fw-extrabold text-white tracking-wide">BAKONG PAYMENT</h4>
+                            <div class="small text-white-50 mt-0.5">Scan to pay with any supported banking app</div>
+                        </div>
+
+                        <div class="card-body p-4 text-center bg-white">
+                            <!-- Merchant & Amount Info -->
+                            <div class="mb-3">
+                                <span class="text-muted small text-uppercase fw-semibold d-block">Merchant Account</span>
+                                <h6 class="fw-bold text-dark mb-1">@Model.MerchantName</h6>
+                                <code class="text-danger small bg-danger-subtle px-2 py-0.5 rounded">@Model.BakongAccountId</code>
+                            </div>
+
+                            <!-- Amount Display -->
+                            <div class="my-3 p-3 bg-light rounded-3 border">
+                                <span class="text-muted small d-block mb-1">Total Payable Premium</span>
+                                <h2 class="text-success fw-extrabold mb-0">
+                                    $@Model.PremiumAmount.ToString("N2") <span class="fs-6 text-muted">@Model.Currency</span>
+                                </h2>
+                                <small class="text-muted">Bill Ref: <code>@Model.PolicyNumber</code></small>
+                            </div>
+
+                            <!-- QR Code Container -->
+                            <div class="p-3 bg-white rounded-3 border d-inline-block shadow-xs mb-3 position-relative" style="min-width: 240px; min-height: 240px;">
+                                <div id="khqr-canvas" class="d-flex justify-content-center align-items-center">
+                                    @if (string.IsNullOrEmpty(Model.QrCodeString))
+                                    {
+                                        <div class="text-danger py-4 small px-2">
+                                            <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
+                                            <span>Failed to generate KHQR string.</span>
+                                            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                                            {
+                                                <div class="mt-2 text-dark small bg-danger-subtle p-2 rounded text-break font-monospace" style="font-size: 11px;">
+                                                    @Model.ErrorMessage
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <img id="khqr-fallback-img" src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=@System.Net.WebUtility.UrlEncode(Model.QrCodeString)" alt="Bakong KHQR Code" width="220" height="220" class="img-fluid rounded" />
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Countdown Timer -->
+                            <div class="alert alert-warning py-2 px-3 small d-flex align-items-center justify-content-center gap-2 mb-3">
+                                <i class="bi bi-clock-history"></i>
+                                <span>QR expires in: <strong id="countdown-timer">15:00</strong></span>
+                            </div>
+
+                            <!-- MD5 Hash Detail -->
+                            <div class="text-start bg-light p-2.5 rounded border small mb-3">
+                                <div class="d-flex justify-content-between text-muted" style="font-size: 11px;">
+                                    <span>KHQR MD5 Hash:</span>
+                                    <span>15 min validity</span>
+                                </div>
+                                <div class="text-truncate font-monospace text-secondary fw-semibold" style="font-size: 11px;">
+                                    @(string.IsNullOrEmpty(Model.Md5) ? "Pending generation" : Model.Md5)
+                                </div>
+                            </div>
+
+                            <!-- Instructions -->
+                            <div class="text-muted small text-start">
+                                <p class="mb-1 fw-semibold text-dark"><i class="bi bi-info-circle me-1 text-primary"></i>How to Pay via QR:</p>
+                                <ol class="ps-3 mb-0 small text-secondary">
+                                    <li>Open <strong>Bakong</strong>, <strong>ABA Mobile</strong>, <strong>ACLEDA</strong>, or any KHQR banking app.</li>
+                                    <li>Scan this QR code and verify the payable amount ($@Model.PremiumAmount.ToString("N2")).</li>
+                                    <li>Approve the transaction on your smartphone.</li>
+                                    <li>Click <strong>Confirm Payment & Activate Policy</strong> to complete.</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTAINER 2: Field Form Payment (Card / Bank Transfer) -->
+                <div id="fieldFormContainer" class="@(Model.PaymentMethod == "FieldForm" ? "" : "d-none")">
+                    <div class="card border-0 shadow rounded-4 overflow-hidden">
+                        <!-- Field Form Header Banner -->
+                        <div class="p-3 text-white" style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge bg-white text-primary fw-bold text-uppercase px-2.5 py-1">
+                                    FIELD FORM
+                                </span>
+                                <div class="d-flex items-center gap-2 text-white-50 small">
+                                    <i class="bi bi-lock-fill text-warning"></i> 256-bit SSL Secure
+                                </div>
+                            </div>
+                            <h5 class="fw-bold mb-0 text-white">Direct Payment Information</h5>
+                            <div class="small text-white-50">Enter your card details or bank transfer verification</div>
+                        </div>
+
+                        <div class="card-body p-4 bg-white">
+                            <!-- Amount Display Banner -->
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded-3 border mb-4">
+                                <div>
+                                    <span class="text-muted small d-block">Premium Due:</span>
+                                    <span class="text-dark fw-bold">@Model.ProductName</span>
+                                </div>
+                                <div class="text-end">
+                                    <span class="text-success fw-extrabold fs-4">$@Model.PremiumAmount.ToString("N2")</span>
+                                    <span class="small text-muted d-block">@Model.Currency</span>
+                                </div>
+                            </div>
+
+                            <!-- Sub-Option Tabs: Card vs Bank Transfer -->
+                            <div class="btn-group w-100 mb-4" role="group">
+                                <input type="radio" class="btn-check" name="fieldOptionRadio" id="radioCard" autocomplete="off" @(Model.FieldPaymentType != "BankTransfer" ? "checked" : "") onchange="selectFieldPaymentType('Card')">
+                                <label class="btn btn-outline-primary text-xs py-2 fw-semibold" for="radioCard">
+                                    <i class="bi bi-credit-card me-1"></i> Credit / Debit Card
+                                </label>
+
+                                <input type="radio" class="btn-check" name="fieldOptionRadio" id="radioBank" autocomplete="off" @(Model.FieldPaymentType == "BankTransfer" ? "checked" : "") onchange="selectFieldPaymentType('BankTransfer')">
+                                <label class="btn btn-outline-primary text-xs py-2 fw-semibold" for="radioBank">
+                                    <i class="bi bi-bank me-1"></i> Bank Transfer / Memo
+                                </label>
+                            </div>
+
+                            <!-- SUB-FORM A: Credit / Debit Card -->
+                            <div id="subformCard" class="@(Model.FieldPaymentType == "BankTransfer" ? "d-none" : "")">
+                                <!-- Interactive Virtual Card Preview -->
+                                <div class="p-4 rounded-4 text-white shadow mb-4 position-relative overflow-hidden" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); min-height: 180px;">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="bi bi-cpu fs-4 text-warning"></i>
+                                            <i class="bi bi-wifi fs-5 text-white-50"></i>
+                                        </div>
+                                        <span id="virtualCardBrandBadge" class="badge bg-white text-dark fw-bold text-uppercase px-2.5 py-1">
+                                            @(string.IsNullOrEmpty(Model.CardType) ? "VISA" : Model.CardType)
+                                        </span>
+                                    </div>
+                                    <div class="font-monospace fs-5 tracking-widest text-light my-2" id="virtualCardNumber">
+                                        @(string.IsNullOrEmpty(Model.CardNumber) ? "•••• •••• •••• ••••" : Model.CardNumber)
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-end mt-3 small">
+                                        <div>
+                                            <span class="text-white-50 text-[10px] d-block text-uppercase">Cardholder</span>
+                                            <span class="fw-bold text-light text-uppercase tracking-wide" id="virtualCardHolder">
+                                                @(string.IsNullOrEmpty(Model.CardHolderName) ? Model.CustomerName.ToUpper() : Model.CardHolderName.ToUpper())
+                                            </span>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="text-white-50 text-[10px] d-block text-uppercase">Expires</span>
+                                            <span class="fw-bold text-light font-monospace" id="virtualCardExpiry">
+                                                @(string.IsNullOrEmpty(Model.CardExpiry) ? "MM/YY" : Model.CardExpiry)
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card Input Fields -->
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label asp-for="CardHolderName" class="form-label small fw-semibold text-dark">Cardholder Name <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light text-muted"><i class="bi bi-person"></i></span>
+                                            <input asp-for="CardHolderName" id="inputCardHolder" class="form-control" placeholder="e.g. JOHN DOE" oninput="updateVirtualCard()" />
+                                        </div>
+                                        <span asp-validation-for="CardHolderName" class="text-danger small"></span>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label asp-for="CardNumber" class="form-label small fw-semibold text-dark">Card Number <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light text-muted"><i class="bi bi-credit-card"></i></span>
+                                            <input asp-for="CardNumber" id="inputCardNumber" class="form-control font-monospace" placeholder="4242 •••• •••• 4242" maxlength="19" oninput="formatAndDetectCard(this)" />
+                                            <span class="input-group-text bg-light text-primary fw-bold" id="cardNetworkIcon">VISA</span>
+                                        </div>
+                                        <span asp-validation-for="CardNumber" class="text-danger small"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="CardExpiry" class="form-label small fw-semibold text-dark">Expiration Date <span class="text-danger">*</span></label>
+                                        <input asp-for="CardExpiry" id="inputCardExpiry" class="form-control font-monospace" placeholder="MM/YY" maxlength="5" oninput="formatExpiry(this)" />
+                                        <span asp-validation-for="CardExpiry" class="text-danger small"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="CardCvv" class="form-label small fw-semibold text-dark">CVV / CVC <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <input asp-for="CardCvv" type="password" maxlength="4" class="form-control font-monospace" placeholder="123" />
+                                            <span class="input-group-text bg-light text-muted" title="3 or 4-digit security code on the back of your card"><i class="bi bi-question-circle"></i></span>
+                                        </div>
+                                        <span asp-validation-for="CardCvv" class="text-danger small"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="CardType" class="form-label small fw-semibold text-dark">Card Network</label>
+                                        <select asp-for="CardType" id="selectCardType" class="form-select" onchange="updateVirtualCard()">
+                                            <option value="Visa">Visa</option>
+                                            <option value="MasterCard">MasterCard</option>
+                                            <option value="UnionPay">UnionPay</option>
+                                            <option value="JCB">JCB</option>
+                                            <option value="American Express">American Express</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="BillingZip" class="form-label small fw-semibold text-dark">Billing Postal / Zip</label>
+                                        <input asp-for="BillingZip" class="form-control" placeholder="12000" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SUB-FORM B: Bank Transfer / Reference -->
+                            <div id="subformBank" class="@(Model.FieldPaymentType == "BankTransfer" ? "" : "d-none")">
+                                <div class="p-3 bg-light rounded-3 border mb-3 text-start small">
+                                    <div class="d-flex align-items-center gap-2 font-bold text-dark mb-1">
+                                        <i class="bi bi-bank text-primary"></i> Direct Bank Transfer Instructions
+                                    </div>
+                                    <p class="text-muted mb-2">
+                                        Transfer <strong>$@Model.PremiumAmount.ToString("N2")</strong> to our partner account at <strong>@Model.MerchantName</strong> (Ref: <code>@Model.PolicyNumber</code>), then enter your payment details below:
+                                    </p>
+                                    <div class="bg-white p-2 rounded border font-monospace text-xs">
+                                        Carrier Account ID: <strong>@Model.BakongAccountId</strong>
+                                    </div>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label asp-for="BankName" class="form-label small fw-semibold text-dark">Origin Bank <span class="text-danger">*</span></label>
+                                        <select asp-for="BankName" class="form-select">
+                                            <option value="ABA Bank">ABA Bank (Advanced Bank of Asia)</option>
+                                            <option value="ACLEDA Bank">ACLEDA Bank Plc</option>
+                                            <option value="Canadia Bank">Canadia Bank</option>
+                                            <option value="Wing Bank">Wing Bank (Cambodia) Plc</option>
+                                            <option value="Sathapana Bank">Sathapana Bank</option>
+                                            <option value="Vattanac Bank">Vattanac Bank</option>
+                                            <option value="J Trust Royal Bank">J Trust Royal Bank</option>
+                                            <option value="Other Bank">Other Bank / Transfer</option>
+                                        </select>
+                                        <span asp-validation-for="BankName" class="text-danger small"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="BankAccountNumber" class="form-label small fw-semibold text-dark">Account / Phone Number <span class="text-danger">*</span></label>
+                                        <input asp-for="BankAccountNumber" class="form-control font-monospace" placeholder="e.g. 001 234 567" />
+                                        <span asp-validation-for="BankAccountNumber" class="text-danger small"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="BankAccountHolder" class="form-label small fw-semibold text-dark">Account Holder Name <span class="text-danger">*</span></label>
+                                        <input asp-for="BankAccountHolder" class="form-control" placeholder="e.g. SOK CHANTHA" />
+                                        <span asp-validation-for="BankAccountHolder" class="text-danger small"></span>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label asp-for="BankTransactionRef" class="form-label small fw-semibold text-dark">Transaction Ref / Slip Code</label>
+                                        <input asp-for="BankTransactionRef" class="form-control font-monospace" placeholder="e.g. TRX-98234871 or leave blank for auto-ref" />
+                                        <small class="text-muted">The transaction ID from your mobile banking receipt.</small>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label asp-for="BankNotes" class="form-label small fw-semibold text-dark">Payment Remarks</label>
+                                        <input asp-for="BankNotes" class="form-control" placeholder="Optional notes for underwriter" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Security Assurance -->
+                            <div class="mt-4 pt-3 border-top d-flex align-items-center justify-content-between text-muted small">
+                                <div class="d-flex align-items-center gap-1.5" style="font-size: 11px;">
+                                    <i class="bi bi-shield-lock-fill text-success"></i>
+                                    <span>PCI-DSS Level 1 Compliant</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2" style="font-size: 11px;">
+                                    <span>Zero Liability Protection</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script src="~/js/qrcode.min.js"></script>
+    <script>
+        // Switch between Payment Methods (QR vs FieldForm)
+        function selectPaymentMethod(method) {
+            document.getElementById('paymentMethodInput').value = method;
+
+            var qrBtn = document.getElementById('btnMethodQR');
+            var fieldBtn = document.getElementById('btnMethodField');
+            var qrCont = document.getElementById('qrPaymentContainer');
+            var fieldCont = document.getElementById('fieldFormContainer');
+            var confirmBtnText = document.getElementById('confirmBtnText');
+
+            if (method === 'QR') {
+                qrBtn.classList.add('border-primary', 'bg-primary-subtle', 'text-primary', 'fw-bold', 'ring-2');
+                qrBtn.classList.remove('border-slate-200', 'bg-white', 'text-secondary');
+
+                fieldBtn.classList.remove('border-primary', 'bg-primary-subtle', 'text-primary', 'fw-bold', 'ring-2');
+                fieldBtn.classList.add('border-slate-200', 'bg-white', 'text-secondary');
+
+                qrCont.classList.remove('d-none');
+                fieldCont.classList.add('d-none');
+                if (confirmBtnText) confirmBtnText.textContent = 'Confirm KHQR Payment & Activate Policy';
+            } else {
+                fieldBtn.classList.add('border-primary', 'bg-primary-subtle', 'text-primary', 'fw-bold', 'ring-2');
+                fieldBtn.classList.remove('border-slate-200', 'bg-white', 'text-secondary');
+
+                qrBtn.classList.remove('border-primary', 'bg-primary-subtle', 'text-primary', 'fw-bold', 'ring-2');
+                qrBtn.classList.add('border-slate-200', 'bg-white', 'text-secondary');
+
+                qrCont.classList.add('d-none');
+                fieldCont.classList.remove('d-none');
+                if (confirmBtnText) confirmBtnText.textContent = 'Process Card / Bank Payment & Activate Policy';
+            }
+        }
+
+        // Switch between Field Form sub-types (Card vs BankTransfer)
+        function selectFieldPaymentType(type) {
+            document.getElementById('fieldPaymentTypeInput').value = type;
+            var subCard = document.getElementById('subformCard');
+            var subBank = document.getElementById('subformBank');
+
+            if (type === 'Card') {
+                subCard.classList.remove('d-none');
+                subBank.classList.add('d-none');
+            } else {
+                subCard.classList.add('d-none');
+                subBank.classList.remove('d-none');
+            }
+        }
+
+        // Virtual Card interactive preview updater
+        function updateVirtualCard() {
+            var nameInput = document.getElementById('inputCardHolder');
+            var cardHolderEl = document.getElementById('virtualCardHolder');
+            if (nameInput && cardHolderEl) {
+                cardHolderEl.textContent = nameInput.value.trim().toUpperCase() || '@Model.CustomerName.ToUpper()';
+            }
+
+            var typeSelect = document.getElementById('selectCardType');
+            var brandBadge = document.getElementById('virtualCardBrandBadge');
+            var networkIcon = document.getElementById('cardNetworkIcon');
+            if (typeSelect && brandBadge) {
+                brandBadge.textContent = typeSelect.value.toUpperCase();
+                if (networkIcon) networkIcon.textContent = typeSelect.value.toUpperCase();
+            }
+        }
+
+        // Auto format card number with spaces (4-4-4-4) & detect brand
+        function formatAndDetectCard(input) {
+            var val = input.value.replace(/\D/g, '');
+            var formatted = '';
+            for (var i = 0; i < val.length; i++) {
+                if (i > 0 && i % 4 === 0) formatted += ' ';
+                formatted += val[i];
+            }
+            input.value = formatted;
+
+            var vCardNumber = document.getElementById('virtualCardNumber');
+            if (vCardNumber) {
+                vCardNumber.textContent = formatted || '•••• •••• •••• ••••';
+            }
+
+            // Simple prefix brand detection
+            var select = document.getElementById('selectCardType');
+            if (select) {
+                if (val.startsWith('4')) {
+                    select.value = 'Visa';
+                } else if (val.startsWith('51') || val.startsWith('52') || val.startsWith('53') || val.startsWith('54') || val.startsWith('55')) {
+                    select.value = 'MasterCard';
+                } else if (val.startsWith('62')) {
+                    select.value = 'UnionPay';
+                } else if (val.startsWith('35')) {
+                    select.value = 'JCB';
+                } else if (val.startsWith('34') || val.startsWith('37')) {
+                    select.value = 'American Express';
+                }
+                updateVirtualCard();
+            }
+        }
+
+        // Auto format expiration MM/YY
+        function formatExpiry(input) {
+            var val = input.value.replace(/\D/g, '');
+            if (val.length >= 2) {
+                input.value = val.substring(0, 2) + '/' + val.substring(2, 4);
+            } else {
+                input.value = val;
+            }
+            var vExpiry = document.getElementById('virtualCardExpiry');
+            if (vExpiry) {
+                vExpiry.textContent = input.value || 'MM/YY';
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Render QR Code
+            var qrText = document.getElementById("qrCodeStringInput")?.value;
+            var container = document.getElementById("khqr-canvas");
+
+            if (qrText && container) {
+                container.innerHTML = "";
+                new QRCode(container, {
+                    text: qrText,
+                    width: 220,
+                    height: 220,
+                    colorDark: "#1a1a1a",
+                    colorLight: "#ffffff"
+                });
+            }
+
+            // Expiration countdown timer
+            var expTimestamp = parseInt(document.getElementById("expTimestampInput")?.value);
+            var timerEl = document.getElementById("countdown-timer");
+
+            if (expTimestamp && timerEl) {
+                function updateTimer() {
+                    var now = Date.now();
+                    var diff = Math.max(0, Math.floor((expTimestamp - now) / 1000));
+                    var minutes = Math.floor(diff / 60);
+                    var seconds = diff % 60;
+                    timerEl.textContent = (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+
+                    if (diff <= 0) {
+                        timerEl.textContent = "EXPIRED";
+                        timerEl.classList.add("text-danger");
+                        clearInterval(interval);
+                    }
+                }
+                updateTimer();
+                var interval = setInterval(updateTimer, 1000);
+            }
+        });
+    </script>
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

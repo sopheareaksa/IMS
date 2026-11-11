@@ -1,0 +1,85 @@
+@model IEnumerable<IMS.Models.Notification>
+@{
+    ViewData["Title"] = "Notification Center";
+}
+
+<div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div>
+        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-primary-subtle text-primary fw-semibold small mb-2">
+            <i class="bi bi-bell-fill"></i> Real-Time Alerts
+            @if (Model.Any(n => !n.isRead))
+            {
+                <span class="badge bg-danger rounded-pill px-1.5 py-0.5" style="font-size: 0.65rem;">New</span>
+            }
+        </div>
+        <h1 class="page-title">Notification Center</h1>
+        <p class="page-subtitle">Real-time alerts, quotation notices, policy issuances, and incident claim updates.</p>
+    </div>
+
+    @if (Model.Any(n => !n.isRead))
+    {
+        <form asp-action="MarkAllAsRead" method="post" class="m-0">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-check2-all me-1"></i> Mark All as Read
+            </button>
+        </form>
+    }
+</div>
+
+<div class="panel p-0 overflow-hidden">
+    @if (Model.Any())
+    {
+        <div class="list-group list-group-flush">
+            @foreach (var n in Model)
+            {
+                <div class="list-group-item p-4 transition-all @(n.isRead ? "bg-white" : "bg-primary-subtle bg-opacity-25 border-start border-primary border-4")">
+                    <div class="d-flex flex-column flex-sm-row sm-items-center justify-content-between gap-2 mb-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            @if (!n.isRead)
+                            {
+                                <span class="badge bg-primary text-white px-2 py-0.5 small">New</span>
+                            }
+                            <h6 class="fw-bold text-dark mb-0">@n.title</h6>
+                            <span class="badge bg-light text-secondary border px-2 py-0.5 small">@n.type</span>
+                        </div>
+                        <div class="text-muted small d-flex align-items-center gap-1">
+                            <i class="bi bi-clock"></i>
+                            <span>@n.createdAt.ToString("MMM dd, yyyy · HH:mm")</span>
+                        </div>
+                    </div>
+
+                    <p class="text-secondary small mb-3 leading-relaxed">@n.message</p>
+
+                    <div class="d-flex align-items-center gap-3">
+                        @if (!string.IsNullOrWhiteSpace(n.linkUrl))
+                        {
+                            <a href="@n.linkUrl" class="btn btn-primary btn-sm px-3">
+                                <span>View Details</span> <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        }
+                        @if (!n.isRead)
+                        {
+                            <form asp-action="MarkAsRead" asp-route-id="@n.notificationId" method="post" class="m-0">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-link text-muted p-0 small text-decoration-none d-flex align-items-center gap-1">
+                                    <i class="bi bi-check2"></i> Mark as read
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light text-muted mb-3" style="width: 64px; height: 64px;">
+                <i class="bi bi-bell-slash fs-3"></i>
+            </div>
+            <h5 class="fw-bold text-dark mb-1">No Notifications</h5>
+            <p class="text-muted small mb-0">You're all caught up! Updates regarding your insurance quotes, policies, and claims will appear here.</p>
+        </div>
+    }
+</div>

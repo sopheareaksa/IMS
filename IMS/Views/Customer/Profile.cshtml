@@ -1,0 +1,276 @@
+@model IMS.ViewModels.CustomerProfileViewModel
+@{
+    ViewData["Title"] = "Account Profile";
+}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Account Profile & Settings</div>
+        <div class="page-header-sub">Manage legal identification, account security credentials, and view policy activity.</div>
+    </div>
+    <div class="page-header-actions">
+        <a asp-action="Dashboard" class="btn btn-outline btn-sm">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a asp-action="MyPolicies" class="btn btn-primary btn-sm">
+            <i class="bi bi-shield-check"></i> My Policies
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Summary Card & Quick Stats -->
+    <div class="col-12 col-lg-4">
+        <!-- Identity Card -->
+        <div class="card p-4 text-center mb-4">
+            <div class="mx-auto mb-3" style="width: 80px; height: 80px; border-radius: 20px; background: linear-gradient(135deg, #2563eb, #6366f1); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; box-shadow: 0 4px 14px rgba(37,99,235,0.3);">
+                @(string.IsNullOrEmpty(Model.FullName) ? Model.Username.Substring(0, 1).ToUpper() : Model.FullName.Substring(0, 1).ToUpper())
+            </div>
+            <h5 class="fw-bold text-dark mb-0">@Model.FullName</h5>
+            <div class="small text-muted mb-3">@@@Model.Username &bull; <span class="text-primary fw-bold">@Model.Role</span></div>
+
+            <div class="p-3 bg-light rounded-3 text-start small mb-3">
+                <div class="info-row">
+                    <span class="info-label">Customer ID</span>
+                    <span class="info-value font-monospace">#CUST-@Model.CustomerId.ToString("D4")</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email</span>
+                    <span class="info-value">@Model.Email</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Phone</span>
+                    <span class="info-value">@Model.Phone</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Member Since</span>
+                    <span class="info-value">@Model.MemberSince.ToString("MMM yyyy")</span>
+                </div>
+            </div>
+
+            <div class="p-2 bg-emerald-50 rounded-2 border text-success small fw-bold">
+                <i class="bi bi-patch-check-fill me-1"></i> Verified Policyholder
+            </div>
+        </div>
+
+        <!-- Activity KPI Metrics Card -->
+        <div class="card p-4">
+            <h6 class="text-secondary fw-bold text-uppercase small mb-3">
+                <i class="bi bi-graph-up me-1 text-primary"></i> Account Activity
+            </h6>
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <div class="p-3 bg-light rounded-3 border text-center">
+                        <span class="text-muted d-block small">Active Policies</span>
+                        <span class="fs-4 fw-extrabold text-primary">@Model.ActivePoliciesCount</span>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-3 bg-light rounded-3 border text-center">
+                        <span class="text-muted d-block small">Inquiries</span>
+                        <span class="fs-4 fw-extrabold text-warning">@Model.TotalQuotationsCount</span>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-3 bg-light rounded-3 border text-center">
+                        <span class="text-muted d-block small">Claims</span>
+                        <span class="fs-4 fw-extrabold text-danger">@Model.ClaimsCount</span>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-3 bg-light rounded-3 border text-center">
+                        <span class="text-muted d-block small">Total Paid</span>
+                        <span class="fs-6 fw-extrabold text-success mt-1 d-block">$@Model.TotalAmountPaid.ToString("N0")</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex flex-column gap-2">
+                <a asp-action="MyPayments" class="btn btn-outline btn-sm text-start justify-content-between">
+                    <span><i class="bi bi-receipt me-1"></i> View Payment Receipts</span>
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </a>
+                <a asp-action="SubmitClaim" class="btn btn-outline btn-sm text-start justify-content-between text-danger">
+                    <span><i class="bi bi-shield-exclamation me-1"></i> File an Incident Claim</span>
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Tabs & Forms -->
+    <div class="col-12 col-lg-8">
+        <div class="card">
+            <div class="card-header bg-white p-0">
+                <ul class="nav nav-tabs border-0 px-3 pt-2" id="profileTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active fw-bold text-dark" id="personal-tab" data-bs-toggle="tab" data-bs-target="#personal-pane" type="button">
+                            <i class="bi bi-person-lines-fill me-1 text-primary"></i> Personal Information
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold text-secondary" id="security-tab" data-bs-toggle="tab" data-bs-target="#security-pane" type="button">
+                            <i class="bi bi-shield-lock me-1"></i> Credentials & Security
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold text-secondary" id="policies-tab" data-bs-toggle="tab" data-bs-target="#policies-pane" type="button">
+                            <i class="bi bi-shield-check me-1"></i> Active Policies (@Model.ActivePoliciesCount)
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card-body p-4 p-md-5">
+                <form asp-action="Profile" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="CustomerId" />
+                    <input type="hidden" asp-for="UserId" />
+                    <input type="hidden" asp-for="Status" />
+                    <input type="hidden" asp-for="Role" />
+                    <input type="hidden" asp-for="MemberSince" />
+
+                    <div class="tab-content" id="profileTabsContent">
+                        <!-- TAB 1: Personal -->
+                        <div class="tab-pane fade show active" id="personal-pane" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-0">Legal Identification Details</h6>
+                                    <small class="text-muted">This information appears on official policy documentation</small>
+                                </div>
+                                <span class="badge badge-primary">Client Profile</span>
+                            </div>
+
+                            <div asp-validation-summary="ModelOnly" class="alert-banner danger mb-4"></div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label asp-for="FullName" class="form-label">Full Legal Name <span class="text-danger">*</span></label>
+                                    <input asp-for="FullName" class="form-control" required />
+                                    <span asp-validation-for="FullName" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="Phone" class="form-label">Phone Number <span class="text-danger">*</span></label>
+                                    <input asp-for="Phone" class="form-control" required />
+                                    <span asp-validation-for="Phone" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="NationalId" class="form-label">National ID / Passport</label>
+                                    <input asp-for="NationalId" class="form-control font-monospace" placeholder="ID-0012345" />
+                                    <span asp-validation-for="NationalId" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="DateOfBirth" class="form-label">Date of Birth</label>
+                                    <input asp-for="DateOfBirth" type="date" class="form-control" />
+                                    <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
+                                </div>
+                                <div class="col-12">
+                                    <label asp-for="Address" class="form-label">Residential Address</label>
+                                    <textarea asp-for="Address" rows="2" class="form-control" placeholder="Street, district, city"></textarea>
+                                    <span asp-validation-for="Address" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end pt-3 border-top">
+                                <button type="submit" class="btn btn-primary btn-md">
+                                    <i class="bi bi-check-circle-fill"></i> Save Personal Details
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- TAB 2: Security -->
+                        <div class="tab-pane fade" id="security-pane" role="tabpanel">
+                            <div class="mb-4 pb-2 border-bottom">
+                                <h6 class="fw-bold text-dark mb-0">Login & Password Security</h6>
+                                <small class="text-muted">Update your email, login username, or change your password</small>
+                            </div>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label asp-for="Username" class="form-label">Username <span class="text-danger">*</span></label>
+                                    <input asp-for="Username" class="form-control font-monospace" required />
+                                    <span asp-validation-for="Username" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="Email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                                    <input asp-for="Email" type="email" class="form-control" required />
+                                    <span asp-validation-for="Email" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="p-4 bg-light rounded-3 border mb-4">
+                                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-key me-1 text-primary"></i> Change Password (Leave blank to keep current)</h6>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label asp-for="CurrentPassword" class="form-label">Current Password</label>
+                                        <input asp-for="CurrentPassword" type="password" class="form-control" placeholder="Enter current password to authorize changes" />
+                                        <span asp-validation-for="CurrentPassword" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="NewPassword" class="form-label">New Password</label>
+                                        <input asp-for="NewPassword" type="password" class="form-control" placeholder="Min. 6 characters" />
+                                        <span asp-validation-for="NewPassword" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="ConfirmPassword" class="form-label">Confirm New Password</label>
+                                        <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="Re-enter new password" />
+                                        <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end pt-3 border-top">
+                                <button type="submit" class="btn btn-primary btn-md">
+                                    <i class="bi bi-check-circle-fill"></i> Update Account & Security
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- TAB 3: Policies -->
+                        <div class="tab-pane fade" id="policies-pane" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold text-dark mb-0">Active Coverages</h6>
+                                <a asp-action="MyPolicies" class="btn btn-sm btn-outline text-primary">Full Policy Management &rarr;</a>
+                            </div>
+
+                            @if (Model.RecentPolicies.Any())
+                            {
+                                <div class="d-flex flex-column gap-3">
+                                    @foreach (var pol in Model.RecentPolicies)
+                                    {
+                                        <div class="p-3 bg-light rounded-3 border d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                            <div>
+                                                <div class="d-flex align-items-center gap-2 mb-1">
+                                                    <code class="fw-bold text-dark font-monospace">@pol.policyNumber</code>
+                                                    <span class="badge badge-success">@pol.status</span>
+                                                </div>
+                                                <div class="fw-bold text-dark">@pol.Quotation?.InsuranceProduct?.name</div>
+                                                <div class="small text-muted">Carrier: @pol.Quotation?.InsuranceProduct?.Company?.name</div>
+                                            </div>
+                                            <div class="text-end">
+                                                <div class="small text-muted">Limit / Premium</div>
+                                                <div class="fw-bold text-dark">$@pol.coverageAmount.ToString("N2")</div>
+                                                <div class="small fw-bold text-success">$@pol.premiumAmount.ToString("N2") / yr</div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="p-4 text-center bg-light rounded-3 border">
+                                    <p class="text-muted mb-2">No active policies found in your profile.</p>
+                                    <a asp-controller="Products" asp-action="Index" class="btn btn-sm btn-primary">Browse Plans</a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

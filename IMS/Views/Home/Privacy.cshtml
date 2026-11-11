@@ -1,6 +1,60 @@
-﻿@{
-    ViewData["Title"] = "Privacy Policy";
+@{
+    ViewData["Title"] = "Privacy Policy & Governance";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <!-- Header Banner -->
+                <div class="card-header bg-dark text-white p-4 p-md-5">
+                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-primary text-white small fw-semibold mb-2">
+                        <i class="bi bi-shield-lock-fill"></i> Data Protection & Compliance
+                    </div>
+                    <h2 class="fw-extrabold text-white mb-2">Privacy Policy & Information Governance</h2>
+                    <p class="text-light-emphasis small mb-0">Last updated: September 2026 &bull; Compliant with National Bank of Cambodia and Financial Data Regulations</p>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    <div class="mb-4">
+                        <h5 class="fw-bold text-dark mb-2">1. Overview & Commitment</h5>
+                        <p class="text-secondary small leading-relaxed">
+                            InsureHub is committed to safeguarding personal, financial, and underwriting information entrusted to us by policyholders, partner insurance carriers, and certified brokers. This policy explains what information is collected, how it is processed, and your data rights.
+                        </p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5 class="fw-bold text-dark mb-2">2. Information We Collect</h5>
+                        <ul class="text-secondary small leading-relaxed">
+                            <li><strong>Identity & Profile:</strong> Full name, national identification or passport numbers, contact telephone, and residential address.</li>
+                            <li><strong>Underwriting Records:</strong> Vehicle specifications, health questionnaires, property declarations, and beneficiary details.</li>
+                            <li><strong>Financial Transactions:</strong> Bakong KHQR transaction hashes, payment references, and settlement timestamps (we do not store raw card PINs or CVVs).</li>
+                            <li><strong>Claims Adjudication:</strong> Incident descriptions, damage assessments, supporting evidence, and settlement vouchers.</li>
+                        </ul>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5 class="fw-bold text-dark mb-2">3. How Information is Used</h5>
+                        <p class="text-secondary small leading-relaxed">
+                            Your data is utilized strictly for quotation calculations, risk profiling, issuing active legal insurance certificates, executing NBC Bakong payment verifications, and processing legitimate claim reimbursements.
+                        </p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5 class="fw-bold text-dark mb-2">4. Data Security & Storage</h5>
+                        <p class="text-secondary small leading-relaxed">
+                            All communications between your browser and our servers are encrypted using TLS 1.3. Identity and policy records are protected via role-based access control (RBAC), multi-tenant agency boundaries, and salted credential storage.
+                        </p>
+                    </div>
+
+                    <div class="border-top pt-4 mt-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <span class="text-muted small">Questions regarding your personal data? Contact our Compliance Officer.</span>
+                        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i> Return to Homepage
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

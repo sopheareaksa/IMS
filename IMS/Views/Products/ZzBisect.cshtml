@@ -1,0 +1,16 @@
+@model IMS.Models.InsuranceProduct
+@{ var products = new List<IMS.Models.InsuranceProduct>(); }
+@if (products.Count > 0)
+{
+    <p>cards</p>
+    @foreach (var p in products)
+    {
+        var typeName = p.InsuranceType?.name ?? "General Insurance";
+        var visual = PlanVisuals.For(typeName);
+        <div class="relative h-32 bg-gradient-to-r @visual.Gradient"></div>
+    }
+}
+else
+{
+    <p>empty</p>
+}

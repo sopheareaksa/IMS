@@ -1,0 +1,192 @@
+@model IEnumerable<IMS.Models.Claim>
+@{
+    ViewData["Title"] = "Policy Incident Claims";
+    int pendingCount = Model.Count(c => c.status == "Submitted" || c.status == "In Review");
+}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Agency Policy Incident Claims</div>
+        <div class="page-header-sub">Assess and adjust claims filed against your agency's active policies.</div>
+    </div>
+    <div class="page-header-actions">
+        <span class="badge badge-warning"><i class="bi bi-hourglass-split me-1"></i>@pendingCount Pending Review</span>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-exclamation-octagon me-2 text-danger"></i>Filed Incident Claims</div>
+        <span class="badge badge-gray">@Model.Count() records</span>
+    </div>
+
+    <!-- Actions Toolbar Outside Table -->
+    <div class="table-actions-toolbar" id="agent-claim-toolbar">
+        <div class="toolbar-label">
+            <span class="badge bg-secondary-subtle text-secondary border py-1.5 px-2" id="agent-claim-badge">
+                <i class="bi bi-info-circle me-1"></i>No claim selected
+            </span>
+            <span class="text-muted small" id="agent-claim-name">Select a claim from the table to assess</span>
+        </div>
+        <div class="toolbar-btns">
+            <form asp-action="UpdateClaimStatus" method="post" class="d-inline m-0">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" class="agent-claim-action-id" />
+                <input type="hidden" name="status" value="In Review" />
+                <button type="submit" id="agent-btn-claim-review" class="btn btn-sm btn-outline text-warning" disabled>
+                    <i class="bi bi-search me-1"></i>Mark In Review
+                </button>
+            </form>
+            <form asp-action="UpdateClaimStatus" method="post" class="d-inline m-0">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" class="agent-claim-action-id" />
+                <input type="hidden" name="status" value="Approved" />
+                <button type="submit" id="agent-btn-claim-approve" class="btn btn-sm btn-success" disabled>
+                    <i class="bi bi-check-circle me-1"></i>Approve Claim
+                </button>
+            </form>
+            <form asp-action="UpdateClaimStatus" method="post" class="d-inline m-0">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" class="agent-claim-action-id" />
+                <input type="hidden" name="status" value="Paid" />
+                <button type="submit" id="agent-btn-claim-paid" class="btn btn-sm btn-primary" disabled>
+                    <i class="bi bi-cash-stack me-1"></i>Mark Paid
+                </button>
+            </form>
+            <form asp-action="UpdateClaimStatus" method="post" class="d-inline m-0" onsubmit="return confirm('Are you sure you want to reject this claim?');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" class="agent-claim-action-id" />
+                <input type="hidden" name="status" value="Rejected" />
+                <button type="submit" id="agent-btn-claim-reject" class="btn btn-sm btn-ghost-danger" disabled>
+                    <i class="bi bi-x-circle me-1"></i>Reject Claim
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table align-middle selectable-table mb-0" id="agent-claims-table">
+            <thead>
+                <tr>
+                    <th style="width: 44px;" class="text-center">
+                        <i class="bi bi-check2-circle text-muted"></i>
+                    </th>
+                    <th>Claim ID</th>
+                    <th>Policy & Claimant</th>
+                    <th>Incident Details</th>
+                    <th>Amount Requested</th>
+                    <th>Filed Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var c in Model)
+                    {
+                        <tr class="selectable-row" data-id="@c.claimId" data-claimant="@(c.InsurancePolicy?.Quotation?.Customer?.fullName ?? "Claimant")" data-status="@c.status">
+                            <td class="text-center" onclick="event.stopPropagation();">
+                                <input type="radio" name="selectedClaim" class="form-check-input agent-claim-radio"
+                                       data-id="@c.claimId" data-claimant="@(c.InsurancePolicy?.Quotation?.Customer?.fullName ?? "Claimant")" data-status="@c.status" />
+                            </td>
+                            <td><span class="fw-bold text-dark font-monospace">#@c.claimId</span></td>
+                            <td>
+                                <div class="cell-primary fw-bold text-dark">@(c.InsurancePolicy?.Quotation?.Customer?.fullName ?? "Claimant")</div>
+                                <div class="cell-sub">Policy: <code>@(c.InsurancePolicy?.policyNumber ?? "N/A")</code></div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark">@c.incidentType</div>
+                                <div class="cell-sub"><i class="bi bi-geo-alt me-1"></i>@c.incidentLocation (@c.incidentDate.ToString("MMM dd, yyyy"))</div>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-danger fs-6">$@c.claimAmount.ToString("N2")</span>
+                            </td>
+                            <td>
+                                <div class="text-dark small">@c.claimDate.ToString("MMM dd, yyyy")</div>
+                            </td>
+                            <td>
+                                @if (c.status == "Approved" || c.status == "Paid")
+                                {
+                                    <span class="badge badge-success"><i class="bi bi-check-circle me-1"></i>@c.status</span>
+                                }
+                                else if (c.status == "Submitted" || c.status == "In Review")
+                                {
+                                    <span class="badge badge-warning"><i class="bi bi-clock-history me-1"></i>@c.status</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-danger"><i class="bi bi-x-circle me-1"></i>@c.status</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <div class="empty-state-icon"><i class="bi bi-shield-check"></i></div>
+                                <div class="empty-state-title">No claims filed</div>
+                                <div class="empty-state-desc">There are no incident claims filed for your agency's policies.</div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const table = document.getElementById('agent-claims-table');
+        if (!table) return;
+
+        const idInputs = document.querySelectorAll('.agent-claim-action-id');
+        const btnReview = document.getElementById('agent-btn-claim-review');
+        const btnApprove = document.getElementById('agent-btn-claim-approve');
+        const btnPaid = document.getElementById('agent-btn-claim-paid');
+        const btnReject = document.getElementById('agent-btn-claim-reject');
+        const badge = document.getElementById('agent-claim-badge');
+        const nameLabel = document.getElementById('agent-claim-name');
+
+        function selectClaim(row) {
+            table.querySelectorAll('tbody tr').forEach(r => r.classList.remove('row-selected'));
+            row.classList.add('row-selected');
+            const radio = row.querySelector('.agent-claim-radio');
+            if (radio) radio.checked = true;
+
+            const id = row.getAttribute('data-id');
+            const claimant = row.getAttribute('data-claimant');
+            const status = row.getAttribute('data-status');
+
+            badge.className = 'badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-2';
+            badge.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Selected';
+            nameLabel.innerHTML = '<strong>Claim #' + id + '</strong> &bull; ' + claimant + ' (' + status + ')';
+
+            idInputs.forEach(input => input.value = id);
+
+            btnReview.disabled = (status === 'In Review' || status === 'Paid');
+            btnApprove.disabled = (status === 'Approved' || status === 'Paid');
+            btnPaid.disabled = (status === 'Paid');
+            btnReject.disabled = (status === 'Rejected' || status === 'Paid');
+        }
+
+        table.querySelectorAll('tbody tr.selectable-row').forEach(row => {
+            row.addEventListener('click', function () {
+                selectClaim(this);
+            });
+        });
+
+        table.querySelectorAll('.agent-claim-radio').forEach(radio => {
+            radio.addEventListener('change', function () {
+                const row = this.closest('tr');
+                if (row) selectClaim(row);
+            });
+        });
+    });
+</script>
+}
+

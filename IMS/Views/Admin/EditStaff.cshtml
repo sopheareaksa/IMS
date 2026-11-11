@@ -1,0 +1,127 @@
+@model IMS.ViewModels.EditStaffViewModel
+@{
+    ViewData["Title"] = "Edit Staff Member";
+}
+
+<div class="row justify-content-center py-3">
+    <div class="col-12 col-lg-8 col-xl-7">
+        <div class="card">
+            <div class="card-header bg-white d-flex align-items-center justify-content-between py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width: 32px; height: 32px; border-radius: 8px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 15px;">
+                        <i class="bi bi-pencil-square"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold text-dark">Edit Host Staff Member</h6>
+                        <small class="text-muted">Update contact details, supervisor, or account status</small>
+                    </div>
+                </div>
+                <a asp-action="Staff" class="btn btn-sm btn-outline">
+                    <i class="bi bi-arrow-left"></i> Directory
+                </a>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <form asp-action="EditStaff" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="StaffId" />
+                    <input type="hidden" asp-for="UserId" />
+                    <input type="hidden" asp-for="CompanyId" />
+
+                    <div asp-validation-summary="ModelOnly" class="alert-banner danger mb-4" role="alert"></div>
+
+                    <!-- Identity -->
+                    <div class="mb-4 pb-3" style="border-bottom: 1px solid #f1f5f9;">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <div style="width: 22px; height: 22px; border-radius: 6px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;">1</div>
+                            <span style="font-size: 13px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: .04em;">Profile & Assignment</span>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="FullName" class="form-label">Full Legal Name <span class="text-danger">*</span></label>
+                                <input asp-for="FullName" class="form-control" required />
+                                <span asp-validation-for="FullName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Phone" class="form-label">Phone Number</label>
+                                <input asp-for="Phone" class="form-control" placeholder="+855 12 345 678" />
+                                <span asp-validation-for="Phone" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Company</label>
+                                <input type="text" class="form-control bg-light" value="@(Model.CompanyName ?? "Host Company")" readonly />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="AgentId" class="form-label">Supervising Agent <span class="text-danger">*</span></label>
+                                <select asp-for="AgentId" class="form-select" asp-items="ViewBag.Agents" required></select>
+                                <span asp-validation-for="AgentId" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Credentials & Status -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <div style="width: 22px; height: 22px; border-radius: 6px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;">2</div>
+                            <span style="font-size: 13px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: .04em;">Account Credentials & Status</span>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Username</label>
+                                <input type="text" class="form-control bg-light font-monospace" value="@Model.Username" readonly />
+                                <small class="text-muted">Username cannot be changed</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                                <input asp-for="Email" class="form-control" type="email" required />
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Status" class="form-label">Account Status <span class="text-danger">*</span></label>
+                                <select asp-for="Status" class="form-select" required>
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                    <option value="Suspended">Suspended</option>
+                                </select>
+                                <span asp-validation-for="Status" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="NewPassword" class="form-label">New Password</label>
+                                <input asp-for="NewPassword" class="form-control" placeholder="Leave blank to keep current" />
+                                <span asp-validation-for="NewPassword" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alerts Switch Card -->
+                    <div class="p-3 bg-light rounded-3 border mb-4">
+                        <div class="form-check form-switch mb-1">
+                            <input class="form-check-input" type="checkbox" asp-for="ReceiveAlerts" id="alertSwitch" />
+                            <label class="form-check-label fw-bold text-dark ms-2" for="alertSwitch">
+                                Enable Automatic Quotation & Claim Alerts
+                            </label>
+                        </div>
+                        <small class="text-muted ps-4 d-block">Staff member will receive system notifications whenever customer quotes or claims are filed.</small>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="d-flex align-items-center justify-content-between pt-3 border-top">
+                        <a asp-action="Staff" class="btn btn-outline btn-md">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-md">
+                            <i class="bi bi-check-circle-fill"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

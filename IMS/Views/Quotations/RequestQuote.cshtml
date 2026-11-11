@@ -1,0 +1,159 @@
+@model IMS.Models.InsuranceProduct
+@using IMS.Services
+@{
+    ViewData["Title"] = "Request a Quote";
+    var customer = ViewBag.Customer as IMS.Models.Customer;
+    var typeName = Model.InsuranceType?.name ?? "General Insurance";
+    var visual = PlanVisuals.For(typeName);
+}
+
+<style>
+    .portal-card a { text-decoration: none; }
+    .portal-card input, .portal-card textarea { outline: none; }
+</style>
+
+<div class="portal-card space-y-5">
+
+    <!-- ════ DARK HERO ════ -->
+    <div class="rounded-2xl bg-gradient-to-br from-gray-900 via-gray-900 to-blue-900 text-white p-6 md:p-8">
+        <a asp-controller="Products" asp-action="Details" asp-route-id="@Model.inProId"
+           class="inline-flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-white transition">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            Back to @Model.name
+        </a>
+        <div class="flex flex-wrap items-center gap-2 mt-4">
+            <span class="px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide bg-white/15 text-white">@typeName</span>
+            @if (Model.Company?.isHostCompany == true)
+            {
+                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold text-white bg-emerald-600/90">
+                    <i data-lucide="badge-check" class="w-3 h-3"></i>
+                    Official Host
+                </span>
+            }
+        </div>
+        <h1 class="text-2xl md:text-3xl font-bold mt-3">Request an Insurance Quotation</h1>
+        <p class="text-gray-300 mt-2">Send your details to <strong class="text-white">@Model.Company?.name</strong> and receive a tailored premium proposal.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        <!-- ════ FORM ════ -->
+        <form asp-controller="Quotations" asp-action="RequestQuote" method="post"
+              class="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="inProId" value="@Model.inProId" />
+
+            <div class="mb-6">
+                <label for="estimatedPremium" class="block text-sm font-semibold text-gray-900 mb-1.5">
+                    Estimated Desired Premium <span class="text-red-600">*</span>
+                </label>
+                <div class="flex items-stretch rounded-lg border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 overflow-hidden">
+                    <span class="inline-flex items-center px-3 bg-gray-50 border-r border-gray-300 text-gray-500 text-sm font-semibold">$</span>
+                    <input id="estimatedPremium" type="number" name="estimatedPremium" step="0.01" min="1"
+                           value="@Model.basePremium.ToString("0.00")" required
+                           class="w-full px-3 py-2.5 text-sm text-gray-900" />
+                    <span class="inline-flex items-center px-3 bg-gray-50 border-l border-gray-300 text-gray-500 text-sm">/ year</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1.5">Adjust this figure for higher limits or additional insured assets. The base price for this plan is $@Model.basePremium.ToString("N2") per year.</p>
+            </div>
+
+            <div class="mb-6">
+                <label for="message" class="block text-sm font-semibold text-gray-900 mb-1.5">
+                    Special Notes, Asset Details or Health History
+                </label>
+                <textarea id="message" name="message" rows="5" maxlength="255"
+                          placeholder="Mention specific requirements, insured property details, health disclosures or questions for the underwriting team..."
+                          class="w-full px-3 py-2.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                <p class="text-xs text-gray-500 mt-1.5">Only your underwriting team reads this note. Do not include payment card details.</p>
+            </div>
+
+            <div class="flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-200 p-4 mb-6">
+                <i data-lucide="shield-check" class="w-5 h-5 text-blue-600 shrink-0 mt-0.5"></i>
+                <p class="text-sm text-blue-900">
+                    Submitting notifies accredited underwriters at <strong>@Model.Company?.name</strong> immediately.
+                    The request is protected and stays non-binding until your policy is issued.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-5 border-t border-gray-100">
+                <a asp-controller="Products" asp-action="Details" asp-route-id="@Model.inProId"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    Submit Quotation Request
+                </button>
+            </div>
+        </form>
+
+        <!-- ════ SIDEBAR ════ -->
+        <aside class="space-y-5">
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div class="relative h-24 bg-gradient-to-r @visual.Gradient">
+                    <img src="@PlanVisuals.PhotoPath(visual)" alt="@typeName" class="absolute inset-0 w-full h-full object-cover" onerror="this.remove()" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-gray-900/70 to-transparent"></div>
+                    <div class="relative h-full flex items-end p-4">
+                        <span class="text-white text-sm font-semibold">@Model.name</span>
+                    </div>
+                </div>
+                <div class="p-5">
+                    <div class="flex items-baseline gap-1.5">
+                        <span class="text-2xl font-bold text-emerald-600">$@Model.basePremium.ToString("N2")</span>
+                        <span class="text-sm text-gray-400">/ yr base</span>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">Underwritten by @Model.Company?.name &bull; Certified Provider Code @Model.Company?.regNo</p>
+                </div>
+            </div>
+
+            @if (customer != null)
+            {
+                <div class="bg-white rounded-xl border border-gray-200 p-5">
+                    <h2 class="inline-flex items-center gap-2 text-sm font-semibold text-gray-900">
+                        <i data-lucide="user-check" class="w-4 h-4 text-blue-600"></i>
+                        Applicant Profile
+                    </h2>
+                    <dl class="mt-4 space-y-3 text-sm">
+                        <div>
+                            <dt class="text-xs uppercase tracking-wide text-gray-400 font-semibold">Full name</dt>
+                            <dd class="text-gray-900 font-medium mt-0.5">@customer.fullName</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs uppercase tracking-wide text-gray-400 font-semibold">Contact phone</dt>
+                            <dd class="text-gray-900 font-medium mt-0.5">@customer.phone</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs uppercase tracking-wide text-gray-400 font-semibold">Address</dt>
+                            <dd class="text-gray-900 font-medium mt-0.5">@(customer.address ?? "Not provided")</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs uppercase tracking-wide text-gray-400 font-semibold">National ID / Passport</dt>
+                            <dd class="text-gray-900 font-medium mt-0.5">@(customer.nationalId ?? "Not provided")</dd>
+                        </div>
+                    </dl>
+                    <a asp-controller="Customer" asp-action="Profile"
+                       class="mt-4 w-full inline-flex justify-center items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                        <i data-lucide="pencil" class="w-4 h-4"></i>
+                        Update Details
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="bg-white rounded-xl border border-gray-200 p-5">
+                    <h2 class="inline-flex items-center gap-2 text-sm font-semibold text-gray-900">
+                        <i data-lucide="user-plus" class="w-4 h-4 text-blue-600"></i>
+                        Sign in required
+                    </h2>
+                    <p class="text-sm text-gray-500 mt-2">Requesting a quote needs a customer profile so an underwriter can reach you with the proposal.</p>
+                    <a asp-controller="Auth" asp-action="Login"
+                       class="mt-4 w-full inline-flex justify-center items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                        Sign In
+                    </a>
+                </div>
+            }
+        </aside>
+    </div>
+</div>

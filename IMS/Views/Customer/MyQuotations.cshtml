@@ -1,0 +1,243 @@
+@model IEnumerable<IMS.Models.Quotation>
+@{
+    ViewData["Title"] = "My Quotation Requests";
+    var quoteReference = TempData["QuoteReference"] as string;
+}
+
+@if (quoteReference != null)
+{
+    <!-- ════ SUBMISSION SUCCESS DIALOG ════ -->
+    <div id="quoteSuccessDialog" role="dialog" aria-modal="true" aria-labelledby="quoteSuccessTitle"
+         class="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-gray-900/60">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
+            <div class="mx-auto w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
+                <i data-lucide="check" class="w-8 h-8 text-emerald-600"></i>
+            </div>
+            <h2 id="quoteSuccessTitle" class="text-lg font-bold text-gray-900 mt-4">Quotation Request Submitted</h2>
+            <p class="text-sm text-gray-500 mt-2">
+                The underwriting team has been alerted. Your quote reference
+                <strong class="text-gray-900">#@quoteReference</strong> is listed with your other requests.
+            </p>
+            <button type="button" id="quoteSuccessOk"
+                    class="mt-5 w-full inline-flex justify-center items-center px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                OK
+            </button>
+        </div>
+    </div>
+    <script>
+        (function () {
+            const dialog = document.getElementById('quoteSuccessDialog');
+            const okButton = document.getElementById('quoteSuccessOk');
+            const close = () => dialog.remove();
+
+            okButton.addEventListener('click', close);
+            dialog.addEventListener('click', (event) => { if (event.target === dialog) close(); });
+            document.addEventListener('keydown', (event) => { if (event.key === 'Escape') close(); });
+            okButton.focus();
+        })();
+    </script>
+}
+
+<!-- ════ PAGE HEADER ════ -->
+<div class="page-header" style="align-items: center; margin-bottom: 24px;">
+    <div>
+        <div class="page-header-title" style="font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.025em; margin-bottom: 4px;">
+            My Insurance Quotation Requests
+        </div>
+        <div class="page-header-sub" style="color: #64748b; font-size: 13.5px;">
+            Track underwriting progress, review tailored premium proposals, and activate policies via digital payment.
+        </div>
+    </div>
+    
+    <!-- Action Outside Table -->
+    <div class="page-header-actions">
+        <a asp-controller="Products" asp-action="Index" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle"></i> Request Another Quote
+        </a>
+    </div>
+</div>
+
+<!-- ════ MAIN TABLE PANEL (All Actions Outside Table) ════ -->
+<div class="panel" style="border-radius: 18px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+    <div class="panel-header" style="background: #ffffff; border-bottom: 1px solid #f1f5f9; padding: 16px 20px;">
+        <div class="panel-title" style="font-size: 14px; font-weight: 700; color: #0f172a;">
+            <i class="bi bi-chat-left-quote me-2 text-primary"></i>Submitted Quotations
+        </div>
+        <span class="badge badge-gray" style="font-weight: 700;">@Model.Count() requests</span>
+    </div>
+
+    <!-- Actions Toolbar Outside Table -->
+    <div class="table-actions-toolbar" id="cust-quote-toolbar" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 12px 20px;">
+        <div class="toolbar-label">
+            <span class="badge bg-secondary-subtle text-secondary border py-1.5 px-2" id="cust-quote-badge" style="font-size: 11.5px;">
+                <i class="bi bi-info-circle me-1"></i>No quotation selected
+            </span>
+            <span class="text-muted small" id="cust-quote-name" style="font-size: 12.5px;">Select a quotation row from the table to proceed</span>
+        </div>
+        <div class="toolbar-btns">
+            <a id="cust-quote-btn-pay" href="#" class="btn btn-sm btn-primary disabled" tabindex="-1" aria-disabled="true">
+                <i class="bi bi-qr-code-scan me-1"></i>Pay & Issue Policy
+            </a>
+            <a id="cust-quote-btn-policy" asp-action="MyPolicies" class="btn btn-sm btn-outline text-success d-none">
+                <i class="bi bi-file-earmark-check me-1"></i>View Active Policy
+            </a>
+            <span id="cust-quote-pending-note" class="badge badge-warning d-none" style="font-size: 11.5px;">
+                <i class="bi bi-clock-history me-1"></i>Underwriting In Progress
+            </span>
+        </div>
+    </div>
+
+    <div class="table-responsive" style="border: none; border-radius: 0; box-shadow: none;">
+        <table class="table align-middle selectable-table mb-0" id="cust-quotations-table">
+            <thead>
+                <tr>
+                    <th style="width: 44px;" class="text-center">
+                        <i class="bi bi-check2-circle text-muted"></i>
+                    </th>
+                    <th>Quote Ref</th>
+                    <th>Insurance Plan</th>
+                    <th>Carrier Partner</th>
+                    <th>Request Date</th>
+                    <th>Estimated Premium</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var q in Model)
+                    {
+                        var hasPolicy = q.InsurancePolicy != null && q.InsurancePolicy.status == "Active";
+
+                        <tr class="selectable-row" data-id="@q.quoteId" data-plan="@(q.InsuranceProduct?.name ?? "Insurance Plan")"
+                            data-status="@q.status" data-haspolicy="@(hasPolicy ? "true" : "false")">
+                            <td class="text-center" onclick="event.stopPropagation();">
+                                <input type="radio" name="selectedQuote" class="form-check-input cust-quote-radio"
+                                       data-id="@q.quoteId" data-plan="@(q.InsuranceProduct?.name ?? "Insurance Plan")"
+                                       data-status="@q.status" data-haspolicy="@(hasPolicy ? "true" : "false")" />
+                            </td>
+                            <td>
+                                <code style="background: #f1f5f9; padding: 3px 8px; border-radius: 6px; font-weight: 700; color: #0f172a;">#@q.quoteId</code>
+                            </td>
+                            <td>
+                                <div class="cell-primary fw-bold text-dark" style="font-size: 13.5px;">@q.InsuranceProduct?.name</div>
+                                <div class="cell-sub" style="font-size: 11.5px; color: #94a3b8;"><i class="bi bi-tag me-1"></i>@(q.InsuranceProduct?.InsuranceType?.name ?? "General")</div>
+                            </td>
+                            <td>
+                                <span class="badge @(q.InsuranceProduct?.Company?.isHostCompany == true ? "badge-primary" : "badge-gray")">
+                                    @(q.InsuranceProduct?.Company?.name ?? "InsureHub")
+                                </span>
+                                @if (q.HandlingAgent != null)
+                                {
+                                    <div class="cell-sub text-primary mt-1" style="font-size: 11px;"><i class="bi bi-person-badge me-1"></i>@q.HandlingAgent.fullName</div>
+                                }
+                            </td>
+                            <td>
+                                <div class="text-dark small">@q.requestDate.ToString("MMM dd, yyyy")</div>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-success fs-6">$@q.estimatedPremium.ToString("N2")</span>
+                                <span class="text-muted small">/ yr</span>
+                            </td>
+                            <td>
+                                @if (q.status == "Accepted")
+                                {
+                                    <span class="badge badge-success"><i class="bi bi-check-circle me-1"></i>Accepted</span>
+                                }
+                                else if (q.status == "Pending")
+                                {
+                                    <span class="badge badge-warning"><i class="bi bi-clock-history me-1"></i>Under Review</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-danger"><i class="bi bi-x-circle me-1"></i>@q.status</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state" style="padding: 48px; text-align: center;">
+                                <div class="empty-state-icon" style="width: 52px; height: 52px; border-radius: 50%; background: #f1f5f9; color: #94a3b8; display: inline-flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 12px;">
+                                    <i class="bi bi-chat-left-dots"></i>
+                                </div>
+                                <div class="empty-state-title" style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">No quotations requested yet</div>
+                                <div class="empty-state-desc" style="font-size: 12.5px; color: #64748b;">Explore our marketplace to request personalized quotes tailored to your protection needs.</div>
+                                <a asp-controller="Products" asp-action="Index" class="btn btn-primary btn-sm mt-2">
+                                    <i class="bi bi-search me-1"></i> Browse Insurance Catalog
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const table = document.getElementById('cust-quotations-table');
+        if (!table) return;
+
+        const btnPay = document.getElementById('cust-quote-btn-pay');
+        const btnPolicy = document.getElementById('cust-quote-btn-policy');
+        const pendingNote = document.getElementById('cust-quote-pending-note');
+        const badge = document.getElementById('cust-quote-badge');
+        const nameLabel = document.getElementById('cust-quote-name');
+
+        function selectQuote(row) {
+            table.querySelectorAll('tbody tr').forEach(r => r.classList.remove('row-selected'));
+            row.classList.add('row-selected');
+            const radio = row.querySelector('.cust-quote-radio');
+            if (radio) radio.checked = true;
+
+            const id = row.getAttribute('data-id');
+            const plan = row.getAttribute('data-plan');
+            const status = row.getAttribute('data-status');
+            const hasPolicy = row.getAttribute('data-haspolicy') === 'true';
+
+            badge.className = 'badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-2';
+            badge.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Selected';
+            nameLabel.innerHTML = '<strong>Quote #' + id + '</strong> &bull; ' + plan + ' (' + status + ')';
+
+            // Reset buttons
+            btnPay.classList.add('disabled');
+            btnPay.setAttribute('tabindex', '-1');
+            btnPay.setAttribute('aria-disabled', 'true');
+            btnPay.href = '#';
+            btnPolicy.classList.add('d-none');
+            pendingNote.classList.add('d-none');
+
+            if (hasPolicy) {
+                btnPolicy.classList.remove('d-none');
+            } else if (status === 'Accepted') {
+                btnPay.classList.remove('disabled');
+                btnPay.removeAttribute('tabindex');
+                btnPay.removeAttribute('aria-disabled');
+                btnPay.href = '@Url.Action("IssuePolicy", "Payment")?quoteId=' + id;
+            } else if (status === 'Pending') {
+                pendingNote.classList.remove('d-none');
+            }
+        }
+
+        table.querySelectorAll('tbody tr.selectable-row').forEach(row => {
+            row.addEventListener('click', function () {
+                selectQuote(this);
+            });
+        });
+
+        table.querySelectorAll('.cust-quote-radio').forEach(radio => {
+            radio.addEventListener('change', function () {
+                const row = this.closest('tr');
+                if (row) selectQuote(row);
+            });
+        });
+    });
+</script>
+}
+
